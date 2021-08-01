@@ -355,6 +355,43 @@ Numrows = st.text_input("Enter Number of rows to show in the table: ", '5')
 st.text('Last ' + Numrows + ' rows of Filtered Data')
 st.dataframe(dftt_newcSUM.tail(int(Numrows)))
 
+#--------------------------------------------------------------------------------------------------------------
+# description part
+dfINFO = pd.read_csv('https://factpages.npd.no/ReportServer_npdpublic?/FactPages/tableview/field_description&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false')
+dfINFO = dfINFO[['fldName','fldDescriptionHeading' ,'fldDescriptionText']]
+
+dfINFO1 = dfINFO.pivot(index='fldName', columns='fldDescriptionHeading', values='fldDescriptionText')
+dfINFO1.reset_index(inplace=True)
+
+d = dfINFO1[dfINFO1['fldName'] == userValue]
+d.drop(columns = ['Recovery strategy '], inplace=True)
+d.set_index(['fldName'],drop=True,inplace=True)
+
+from st_aggrid import AgGrid
+# show table
+st.text('Description Data')
+st.dataframe(d)
+
+# creating 5 columns of text to show description
+with st.beta_expander('Show full description',False):
+    col1,col2,col3,col4,col5 = st.beta_columns(5)
+    col1.markdown("<h1 style='text-align: center; font-size:20px;'>Development</h1>", unsafe_allow_html=True)
+    col1.success(str(d['Development '].values[0]))
+
+    col2.markdown("<h1 style='text-align: center; font-size:20px;'>Recovery</h1>", unsafe_allow_html=True)
+    col2.success(str(d['Recovery '].values[0]))
+
+    col3.markdown("<h1 style='text-align: center; font-size:20px;'>Reservoir</h1>", unsafe_allow_html=True)
+    col3.success(str(d['Reservoir '].values[0]))
+
+    col4.markdown("<h1 style='text-align: center; font-size:20px;'>Status</h1>", unsafe_allow_html=True)
+    col4.success(str(d['Status '].values[0]))
+
+    col5.markdown("<h1 style='text-align: center; font-size:20px;'>Transport</h1>", unsafe_allow_html=True)
+    col5.success(str(d['Transport '].values[0]))
+
+#--------------------------------------------------------------------------------------------------------------
+
 dfcum = df_newcSUM.copy()
 
 userValuescSum = userValues.copy()
