@@ -351,8 +351,9 @@ for i in range(len(userValues)-1):
     dftt_newcSUM[userValues[i] + ' Cumulative Production'] = dftt_newcSUM[userValues[i]].cumsum()
 
 # show table
-st.text('Sample of Filtered Data')
-st.dataframe(dftt_newcSUM.sample(6))
+Numrows = st.text_input("Enter Number of rows to show in the table: ", '5')
+st.text('Last ' + Numrows + ' rows of Filtered Data')
+st.dataframe(dftt_newcSUM.tail(int(Numrows)))
 
 dfcum = df_newcSUM.copy()
 
