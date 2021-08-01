@@ -367,7 +367,6 @@ d = dfINFO1[dfINFO1['fldName'] == userValue]
 d.drop(columns = ['Recovery strategy '], inplace=True)
 d.set_index(['fldName'],drop=True,inplace=True)
 
-from st_aggrid import AgGrid
 # show table
 st.text('Description Data')
 st.dataframe(d)
