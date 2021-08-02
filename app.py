@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.pylab as plt
 import matplotlib.dates as mdates
+from matplotlib.ticker import FixedLocator
 import streamlit as st
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
@@ -77,7 +78,7 @@ dft_new.set_index('Time', inplace=True)
 
 
 
-def plot_multi2(data,userValues, cols=None, spacing=.05, **kwargs):
+def plot_multi2(data,userValues,xtime, cols=None, spacing=.05, **kwargs):
 
 
     # Get default color style from pandas - can be changed to any other color list
@@ -102,18 +103,28 @@ def plot_multi2(data,userValues, cols=None, spacing=.05, **kwargs):
             #colors[userValues.index('cumulative')] = 'magenta'
             colors[userValues.index('cumulative')] = colors[0]
 
-
-    years = mdates.YearLocator()   # every year
-    months = mdates.MonthLocator()  # every month
-    years_fmt = mdates.DateFormatter('%Y')
+    if xtime == 'yes':
+        years = mdates.YearLocator()   # every year
+        months = mdates.MonthLocator()  # every month
+        years_fmt = mdates.DateFormatter('%Y')
 
     # First axis
     ax = data.loc[:, cols[0]].plot(x_compat=True,label=cols[0], color=colors[0], **kwargs)
 
-    # round to nearest years.
-    datemin = np.datetime64(data.index[0], 'Y')
-    datemax = np.datetime64(list(data.index)[-2], 'Y') + np.timedelta64(1, 'Y')
-    ax.set_xlim(datemin, datemax)
+    if xtime == 'yes':
+        # round to nearest years.
+        datemin = np.datetime64(data.index[0], 'Y')
+        datemax = np.datetime64(list(data.index)[-2], 'Y') + np.timedelta64(1, 'Y')
+        ax.set_xlim(datemin, datemax)
+    else:
+        # round 
+        datemin = 0
+        datemax = data.shape[0]
+        ax.set_xlim(datemin, datemax)
+
+        ax.tick_params(which='major', width=1)
+        ax.tick_params(which='major', length=7)
+        plt.xticks(np.arange(0, data.shape[0] +1, 12))
     ax.grid(axis='both', which='both')
 
     if (cols[0] == 'GAS' or  cols[0] == 'GAS Cumulative Production'):
@@ -142,15 +153,19 @@ def plot_multi2(data,userValues, cols=None, spacing=.05, **kwargs):
         lines += line
         labels += label
 
-    # format the ticks
-    ax.xaxis.set_major_locator(years)
-    ax.xaxis.set_major_formatter(years_fmt)
-    ax.xaxis.set_minor_locator(months)
-    
+    if xtime == 'yes':
+        # format the ticks
+        ax.xaxis.set_major_locator(years)
+        ax.xaxis.set_major_formatter(years_fmt)
+        ax.xaxis.set_minor_locator(months)
+    else:
+        minor_locator = FixedLocator(data.index.to_list())
+        ax.xaxis.set_minor_locator(minor_locator)
+
     ax.legend(lines, labels, loc=0)
     return ax
 
-def plot_multi3(data,userValues, cols=None, spacing=.05, **kwargs):
+def plot_multi3(data,userValues,xtime, cols=None, spacing=.05, **kwargs):
 
 
     # Get default color style from pandas - can be changed to any other color list
@@ -175,19 +190,31 @@ def plot_multi3(data,userValues, cols=None, spacing=.05, **kwargs):
             #colors[userValues.index('cumulative')] = 'magenta'
             colors[userValues.index('cumulative')] = colors[0]
 
-
-    years = mdates.YearLocator()   # every year
-    months = mdates.MonthLocator()  # every month
-    years_fmt = mdates.DateFormatter('%Y')
+    if xtime == 'yes':
+        years = mdates.YearLocator()   # every year
+        months = mdates.MonthLocator()  # every month
+        years_fmt = mdates.DateFormatter('%Y')
 
     # First axis
     ax = data.loc[:, cols[0]].plot(x_compat=True,label=cols[0], color=colors[0], **kwargs)
     # format the ticks
 
     # round to nearest years.
-    datemin = np.datetime64(data.index[0], 'Y')
-    datemax = np.datetime64(list(data.index)[-2], 'Y') + np.timedelta64(1, 'Y')
-    ax.set_xlim(datemin, datemax)
+    if xtime == 'yes':
+        datemin = np.datetime64(data.index[0], 'Y')
+        datemax = np.datetime64(list(data.index)[-2], 'Y') + np.timedelta64(1, 'Y')
+        ax.set_xlim(datemin, datemax)
+
+    else:
+        # round 
+        datemin = 0
+        datemax = data.shape[0]
+        ax.set_xlim(datemin, datemax)
+
+        ax.tick_params(which='major', width=1)
+        ax.tick_params(which='major', length=7)
+        plt.xticks(np.arange(0, data.shape[0] +1, 12))
+
     ax.grid(axis='both', which='both')
 
     if (cols[0] == 'GAS'):
@@ -235,10 +262,13 @@ def plot_multi3(data,userValues, cols=None, spacing=.05, **kwargs):
         line, label = ax_new.get_legend_handles_labels()
         lines += line
         labels += label
-        
-    ax.xaxis.set_major_locator(years)
-    ax.xaxis.set_major_formatter(years_fmt)
-    ax.xaxis.set_minor_locator(months)
+    if xtime == 'yes':
+        ax.xaxis.set_major_locator(years)
+        ax.xaxis.set_major_formatter(years_fmt)
+        ax.xaxis.set_minor_locator(months)
+    else:
+        minor_locator = FixedLocator(data.index.to_list())
+        ax.xaxis.set_minor_locator(minor_locator)
 
     ax.legend(lines, labels, loc=0)
     return ax
@@ -427,107 +457,222 @@ for fluid in mfluids:
 #===============================================================================================================================================================#
 st.header('Group Graphs')
 
+def plotMult1(df_new,dft_new,xtime):
+    # ploting time with Fluid Production
+    if graphNum !='1':
+        if (answer == 'group' or answer == 'both'):
+
+            if xtime == 'yes':
+                years = mdates.YearLocator()   # every year
+                months = mdates.MonthLocator()  # every month
+                years_fmt = mdates.DateFormatter('%Y')
+
+                colors2=['green', 'orange','black','blue']
+                ax = df_new[mfluids].set_index('Time').plot(figsize=(25,10), color=mcolors,x_compat=True)
+                plt.ylabel('Fluid Production Rate (MSm3/Month)');
+
+                for year in yearsx:
+                    plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
+
+                if 'GAS' in userValues:
+                    ax2=ax.twinx()
+                    # make a plot with different y-axis using second axis object
+                    ax2.plot(dft_new['GAS'],label="GAS",color="red");
+                    ax2.set_ylabel("GAS Production Rate (BSm3/Month)")   
+                    plt.legend(loc=(0.95,1))
+
+                # format the ticks
+                ax.xaxis.set_major_locator(years)
+                ax.xaxis.set_major_formatter(years_fmt)
+                ax.xaxis.set_minor_locator(months)
+
+                # round to nearest years.
+                datemin = np.datetime64(df_new['Time'][0], 'Y') 
+                datemax = np.datetime64(list(df_new['Time'])[-2], 'Y') +1
+                ax.set_xlim(datemin, datemax)
+
+                ax.tick_params(which='major', width=1)
+                ax.tick_params(which='major', length=7)
+
+                ax.grid(axis='both', which='both')
+
+                plt.title(str(userValue)+ ' Field Production' );
+                st.pyplot()
+            else:
+
+                from matplotlib.ticker import FixedLocator
+
+                colors2=['green', 'orange','black','blue']
+                ax = df_new[mfluids].plot(figsize=(25,10), color=mcolors,x_compat=True)
+                plt.ylabel('Fluid Production Rate (MSm3/Month)');
+
+                for tick in np.arange(0, df_new.shape[0] +1, 12):
+                    plt.axvline(tick,color='black',linewidth=1)
+
+                if 'GAS' in userValues:
+                    ax2=ax.twinx()
+                    # make a plot with different y-axis using second axis object
+                    ax2.plot(dft_new.reset_index()['GAS'],label="GAS",color="red");
+                    ax2.set_ylabel("GAS Production Rate (BSm3/Month)")   
+                    plt.legend(loc=(0.95,1))
+
+                # format the ticks
+                #minor_locator = AutoMinorLocator(2)
+                minor_locator = FixedLocator(df_new.index.to_list())
+                ax.xaxis.set_minor_locator(minor_locator)
+
+                # round 
+                datemin = 0
+                datemax = df_new.shape[0]
+                ax.set_xlim(datemin, datemax)
+
+                ax.tick_params(which='major', width=1)
+                ax.tick_params(which='major', length=7)
+                plt.xticks(np.arange(0, df_new.shape[0] +1, 12))
+
+                ax.grid(axis='both', which='both')
+
+                plt.title(str(userValue)+ ' Field Production' );
+                st.pyplot()
+
 # ploting time with Fluid Production
-if len(graphNum) !=1:
-    if (answer == 'group' or answer == 'both'):
+plotMult1(df_new,dft_new,'yes')
 
-        years = mdates.YearLocator()   # every year
-        months = mdates.MonthLocator()  # every month
-        years_fmt = mdates.DateFormatter('%Y')
+# Trim Oil date Graph
+if ('OIL' in userValues):
+    plotMult1(df_new,dft_new,'no')
 
-        colors2=['green', 'orange','black','blue']
-        ax = df_new[mfluids].set_index('Time').plot(figsize=(25,10), color=mcolors,x_compat=True)
-        plt.ylabel('Fluid Production Rate (MSm3/Month)');
 
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
+def plotMult2(df_newcSUM,dftt_newcSUM,xtime):
+    # ploting time with Fluid Production
+    if len(graphNum) !=1:
+        if (answer == 'group' or answer == 'both'):
+            if xtime == 'yes':
+                years = mdates.YearLocator()   # every year
+                months = mdates.MonthLocator()  # every month
+                years_fmt = mdates.DateFormatter('%Y')
 
-        if 'GAS' in userValues:
-            ax2=ax.twinx()
-            # make a plot with different y-axis using second axis object
-            ax2.plot(dft_new['GAS'],label="GAS",color="red");
-            ax2.set_ylabel("GAS Production Rate (BSm3/Month)")   
-            plt.legend(loc=(0.95,1))
+                colors2=['green', 'red', 'orange','black','blue']
+                ax = df_newcSUM[csumNames].set_index('Time').plot(figsize=(25,10), color=mcolors,x_compat=True)
+                plt.ylabel('Fluid Cumulative Production (MSm3)');
 
-        # format the ticks
-        ax.xaxis.set_major_locator(years)
-        ax.xaxis.set_major_formatter(years_fmt)
-        ax.xaxis.set_minor_locator(months)
+                for year in yearsx:
+                    plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
 
-        # round to nearest years.
-        datemin = np.datetime64(df_new['Time'][0], 'Y')
-        datemax = np.datetime64(list(df_new['Time'])[-2], 'Y') + np.timedelta64(1, 'Y')
-        ax.set_xlim(datemin, datemax)
+                if 'GAS' in userValues:
+                    ax2=ax.twinx()
+                    # make a plot with different y-axis using second axis object
+                    ax2.plot(dftt_newcSUM['GAS Cumulative Production'],label="GAS",color="red");
+                    ax2.set_ylabel("GAS Cumulative Production (BSm3)")
+                    plt.legend(loc=(0.95, 1))
+                
 
-        ax.grid(axis='both', which='both')
+                # format the ticks
+                ax.xaxis.set_major_locator(years)
+                ax.xaxis.set_major_formatter(years_fmt)
+                ax.xaxis.set_minor_locator(months)
 
-        plt.title(str(userValue)+ ' Field Production' );
-        st.pyplot()
+                # round to nearest years.
+                datemin = np.datetime64(df_newcSUM['Time'][0], 'Y')
+                datemax = np.datetime64(list(df_newcSUM['Time'])[-2], 'Y') + np.timedelta64(1, 'Y')
+                ax.set_xlim(datemin, datemax)
 
-# ploting time with Fluid Production
-if len(graphNum) !=1:
-    if (answer == 'group' or answer == 'both'):
+                ax.grid(axis='both', which='both')
 
-        years = mdates.YearLocator()   # every year
-        months = mdates.MonthLocator()  # every month
-        years_fmt = mdates.DateFormatter('%Y')
+                plt.title(str(userValue)+ ' Field Cumulative Production' );
+                st.pyplot()
 
-        colors2=['green', 'red', 'orange','black','blue']
-        ax = df_newcSUM[csumNames].set_index('Time').plot(figsize=(25,10), color=mcolors,x_compat=True)
-        plt.ylabel('Fluid Cumulative Production (MSm3)');
+            else:
+                from matplotlib.ticker import FixedLocator
 
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
+                colors2=['green', 'orange','black','blue']
+                ax = df_newcSUM[csumNames].plot(figsize=(25,10), color=mcolors,x_compat=True)
+                plt.ylabel('Fluid Cumulative Production (MSm3)');
 
-        if 'GAS' in userValues:
-            ax2=ax.twinx()
-            # make a plot with different y-axis using second axis object
-            ax2.plot(dftt_newcSUM['GAS Cumulative Production'],label="GAS",color="red");
-            ax2.set_ylabel("GAS Cumulative Production (BSm3)")
-            plt.legend(loc=(0.95, 1))
-        
+                for tick in np.arange(0, df_newcSUM.shape[0] +1, 12):
+                    plt.axvline(tick,color='black',linewidth=1)
 
-        # format the ticks
-        ax.xaxis.set_major_locator(years)
-        ax.xaxis.set_major_formatter(years_fmt)
-        ax.xaxis.set_minor_locator(months)
+                if 'GAS' in userValues:
+                    ax2=ax.twinx()
+                    # make a plot with different y-axis using second axis object
+                    ax2.plot(dftt_newcSUM.reset_index()['GAS Cumulative Production'],label="GAS",color="red");
+                    ax2.set_ylabel("GAS Cumulative Production (BSm3)")
+                    plt.legend(loc=(0.95, 1))
 
-        # round to nearest years.
-        datemin = np.datetime64(df_newcSUM['Time'][0], 'Y')
-        datemax = np.datetime64(list(df_newcSUM['Time'])[-2], 'Y') + np.timedelta64(1, 'Y')
-        ax.set_xlim(datemin, datemax)
+                # format the ticks
+                #minor_locator = AutoMinorLocator(2)
+                minor_locator = FixedLocator(df_newcSUM.index.to_list())
+                ax.xaxis.set_minor_locator(minor_locator)
 
-        ax.grid(axis='both', which='both')
+                # round 
+                datemin = 0
+                datemax = df_newcSUM.shape[0]
+                ax.set_xlim(datemin, datemax)
 
-        plt.title(str(userValue)+ ' Field Cumulative Production' );
-        st.pyplot()
+                plt.xticks(np.arange(0, df_newcSUM.shape[0] +1, 12))
 
-userValuesclr = userValues.copy()
-if len(graphNum) !=1:
-    if (answer == 'group' or answer == 'both'):
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
+                ax.grid(axis='both', which='both')
 
-        plot_multi3(dft_new,userValuesclr, figsize=(25, 10));
+                plt.title(str(userValue)+ ' Field Cumulative Production');
+                st.pyplot()
 
-        plt.title(str(userValue)+ ' Field Production' );
-        st.pyplot()
+#  ploting time with Fluid Production
+plotMult2(df_newcSUM,dftt_newcSUM,'yes')
 
+# Trim Oil date Graph
+if ('OIL' in userValues):
+    plotMult2(df_newcSUM,dftt_newcSUM,'no')
+
+def plotMultiy1(dft_new,xtime):
+    userValuesclr = userValues.copy()
+    if len(graphNum) !=1:
+        if (answer == 'group' or answer == 'both'):
+            if xtime == 'yes':
+                for year in yearsx:
+                    plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
+            else:
+                for tick in np.arange(0, dft_new.shape[0] +1, 12):
+                    plt.axvline(tick,color='black',linewidth=1)
+
+            plot_multi3(dft_new,userValuesclr,xtime, figsize=(25, 10));
+
+            plt.title(str(userValue)+ ' Field Production');
+            st.pyplot()
 
 # ploting time with Fluid Production (Multiple y-axis)
-userValuesclr = userValues.copy()
-if len(graphNum) !=1:
-    if (answer == 'group' or answer == 'both'):
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
+plotMultiy1(dft_new,'yes')
 
-        #df_newcSUM.set_index('Time', inplace=True)
-        plot_multi2(dftt_newcSUM,userValuesclr, figsize=(25, 10));
-        
-        plt.title(str(userValue)+ ' Field Cumulative Production' );
-        st.pyplot()
+# ploting time with Fluid Production (Multiple y-axis)(indexes)
+if ('OIL' in userValues):
+    plotMultiy1(dft_new.reset_index(drop=True),'no')
 
 
+
+def plotMultiy2(dftt_newcSUM,xtime):
+    # ploting time with Fluid Production (Multiple y-axis)
+    userValuesclr = userValues.copy()
+    if len(graphNum) !=1:
+        if (answer == 'group' or answer == 'both'):
+
+            if xtime == 'yes':
+                for year in yearsx:
+                    plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
+            else:
+                for tick in np.arange(0, dftt_newcSUM.shape[0] +1, 12):
+                    plt.axvline(tick,color='black',linewidth=1)
+
+            #df_newcSUM.set_index('Time', inplace=True)
+            plot_multi2(dftt_newcSUM,userValuesclr,xtime, figsize=(25, 10));
+            
+            plt.title(str(userValue)+ ' Field Cumulative Production');
+            st.pyplot()
+
+# ploting time with Fluid Production (Multiple y-axis)
+plotMultiy2(dftt_newcSUM,'yes')
+
+# ploting time with Fluid Production (Multiple y-axis)(indexes)
+if ('OIL' in userValues):
+    plotMultiy2(dftt_newcSUM.reset_index(drop=True),'no')
 
 
 
@@ -556,7 +701,7 @@ if (answer == 'individual' or answer == 'both' or len(graphNum) ==1) and (len(us
     for year in yearsx:
         plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
 
-    plot_multi3(lstdf[0],userValuesclr, figsize=(20, 10));
+    plot_multi3(lstdf[0],userValuesclr,'yes', figsize=(20, 10));
 
 
     if lstdf[0].columns.to_list()[0] == 'GAS':
@@ -577,7 +722,7 @@ if (answer == 'individual' or answer == 'both' or len(graphNum) ==1) and len(use
         plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
 
 
-    plot_multi3(lstdf[1],userValuesclr, figsize=(20, 10));
+    plot_multi3(lstdf[1],userValuesclr,'yes', figsize=(20, 10));
 
     if lstdf[1].columns.to_list()[0] == 'GAS':
         plt.title(str(userValue)+ ' Field '  + lstdf[1].columns.to_list()[0] + ' Production');
@@ -594,7 +739,7 @@ if (answer == 'individual' or answer == 'both' or len(graphNum) ==1) and len(use
     for year in yearsx:
         plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
 
-    plot_multi3(lstdf[2],userValuesclr, figsize=(20, 10));
+    plot_multi3(lstdf[2],userValuesclr,'yes', figsize=(20, 10));
     
     if lstdf[2].columns.to_list()[0] == 'GAS':
         plt.title(str(userValue)+ ' Field ' + lstdf[2].columns.to_list()[0] + ' Production');
@@ -612,7 +757,7 @@ if (answer == 'individual' or answer == 'both' or len(graphNum) ==1) and len(use
     for year in yearsx:
         plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
 
-    plot_multi3(lstdf[3],userValuesclr, figsize=(20, 10));
+    plot_multi3(lstdf[3],userValuesclr,'yes', figsize=(20, 10));
 
     if lstdf[3].columns.to_list()[0] == 'GAS':
         plt.title(str(userValue)+ ' Field ' + lstdf[3].columns.to_list()[0] + ' Production');
@@ -630,7 +775,7 @@ if (answer == 'individual' or answer == 'both' or len(graphNum) ==1) and len(use
     for year in yearsx:
         plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
 
-    plot_multi3(lstdf[4],userValuesclr, figsize=(20, 10));
+    plot_multi3(lstdf[4],userValuesclr,'yes', figsize=(20, 10));
     
     if lstdf[4].columns.to_list()[0] == 'GAS':
         plt.title(str(userValue)+ ' Field ' + lstdf[4].columns.to_list()[0] + ' Production');
