@@ -37,11 +37,24 @@ def load_data():
     return df,dft,lst
 
 
-# taking input from the user and checking if it's in prfInformationCarrier column
-# dropdown selecttion
+#Load data
 df,dft,lst = load_data()
 
-selection = st.selectbox('Select The Value from prfInformationCarrier to filtter with',lst) 
+#=================================================== Multiple oil ==================================
+# Multiselect
+lstOil  = st.multiselect('For Multiple oil graph select the fields to plot with',lst,['EKOFISK','ELDFISK','STATFJORD','TROLL'])
+
+dfMultOil = df.copy()
+# change prfInformationCarrier column name
+dfMultOil.rename(columns={'prfInformationCarrier': 'Field'}, inplace=True)
+dfMultOil = dfMultOil[dfMultOil['Field'].isin(lstOil)].pivot(index='Time', columns='Field', values='prfPrdOilGrossMillSm3')
+
+#=================================================== ============ ==================================
+
+
+# taking input from the user and checking if it's in prfInformationCarrier column
+# dropdown selecttion
+selection = st.selectbox('Select a Field to filtter with',lst) 
 userValue = selection
 
 df_new = df[df['prfInformationCarrier'] == userValue]
@@ -365,6 +378,7 @@ if ans.lower() == 'yes':
     endTime = endTime + '-' + '02'
     df_new = df_new[(df_new['Time']> statrtTime) & (df_new['Time']< endTime)]
     dft_new = dft_new[(dft_new.index> statrtTime) & (dft_new.index< endTime)]
+    dfMultOil = dfMultOil[(dfMultOil.index> statrtTime) & (dfMultOil.index< endTime)]
     df_new.reset_index(drop=True, inplace=True)
 
 
@@ -534,6 +548,38 @@ def plotMult1(df_new,dft_new,xtime):
 
                 plt.title(str(userValue)+ ' Field Production' );
                 st.pyplot()
+
+#=====================================MultiOil=======================================================
+years = mdates.YearLocator()   # every year
+months = mdates.MonthLocator()  # every month
+years_fmt = mdates.DateFormatter('%Y')
+
+yearsxoil = dfMultOil.index.year.to_list()
+yearsxoil = list(set(yearsxoil))
+
+
+
+ax = dfMultOil.plot(figsize=(25,12),x_compat=True);
+
+for year in yearsxoil:
+    plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
+plt.title('Oil Production');
+plt.xlabel('Time');
+plt.ylabel('Production Rate (MSm3/Month)');
+
+# format the ticks
+ax.xaxis.set_major_locator(years)
+ax.xaxis.set_major_formatter(years_fmt)
+ax.xaxis.set_minor_locator(months)
+
+# round to nearest years.
+datemin = np.datetime64(dfMultOil.index[0], 'Y')
+datemax = np.datetime64(list(dfMultOil.index)[-2], 'Y') + np.timedelta64(1, 'Y')
+ax.set_xlim(datemin, datemax)
+
+ax.grid(axis='both', which='both')
+st.pyplot()
+#============================================================================================
 
 # ploting time with Fluid Production
 plotMult1(df_new,dft_new,'yes')
