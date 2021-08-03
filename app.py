@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import base64
+import seaborn as sb
 import matplotlib.pyplot as plt
 import matplotlib.pylab as plt
 import matplotlib.dates as mdates
@@ -9,6 +11,10 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 @st.cache
 def load_data():
     df = pd.read_csv('https://factpages.npd.no/ReportServer_npdpublic?/FactPages/tableview/field_production_gross_monthly&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false')
+
+    df1 = pd.read_csv('https://factpages.npd.no/ReportServer_npdpublic?/FactPages/tableview/field_reserves&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false')
+
+    df2 = pd.read_csv('https://factpages.npd.no/ReportServer_npdpublic?/FactPages/tableview/field_in_place_volumes&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false')
 
     #df = pd.read_csv('data.csv')
     # make a new time column
@@ -34,11 +40,11 @@ def load_data():
     i = lst.index("TROLL")
     lst[i], lst[0] = lst[0], lst[i]
 
-    return df,dft,lst
+    return df,dft,lst,df1,df2
 
 
 #Load data
-df,dft,lst = load_data()
+df,dft,lst,df1Hist,df2Hist = load_data()
 
 #=================================================== Multiple oil ==================================
 # Multiselect
@@ -89,7 +95,69 @@ df_new.reset_index(drop=True, inplace=True)
 
 dft_new.set_index('Time', inplace=True)
 
+#============================================== Hist ========================================
+# mergeng the two dataframes
+dfHist = pd.merge(df1Hist, df2Hist, on='fldNpdidField')
 
+# Extracting needed columns for charts
+dfHist = dfHist[['fldName_x','fldInplaceOil', 'fldRecoverableOil', 'fldRemainingOil', 'fldRecoverableGas', 'fldRemainingGas', 'fldInplaceAssGas', 'fldInplaceFreeGas']]
+
+# filtering with user value
+df3Filtered = dfHist[dfHist['fldName_x'] == userValue]
+
+# rename columns
+df3Filtered = df3Filtered.rename(columns={'fldInplaceOil':'In place Oil','fldRecoverableOil':'Rec Oil','fldRemainingOil':'Remain Oil',
+                   'fldRecoverableGas':'Recoverable Gas','fldRemainingGas':'Remaining Gas','fldInplaceAssGas':'Gas in place Ass','fldInplaceFreeGas':'in Place Free Gas'})
+
+# split the filterd dataframe into two dataframes one for oil and for gas
+df3FilterdOil = df3Filtered[['In place Oil','Rec Oil','Remain Oil']]
+df3FilterdGas = df3Filtered[['Recoverable Gas','Remaining Gas','Gas in place Ass','in Place Free Gas']]
+
+# convert the columns to rows for the bar chart (OIL)
+df3FilterdOil_T = df3FilterdOil.T.reset_index()
+
+# selecting the color palette (blue)
+color_base = sb.color_palette()[0]
+
+with st.beta_expander('Click here to show histograms',False):
+    col1,col2 = st.beta_columns(2)
+
+    sb.barplot(x = 'index',
+                y = df3FilterdOil_T[df3FilterdOil_T.columns[1]],
+                data = df3FilterdOil_T,
+                color=color_base)
+    
+
+    plt.title(userValue + ' OIL Distribution');
+    plt.xlabel('');
+    plt.ylabel(' Oil Volume (MSm3)')
+
+    # Show the plot
+    plt.show()
+    col1.pyplot()
+    
+    # convert the columns to rows for the bar chart (GAS)
+    df3FilterdGas_T = df3FilterdGas.T.reset_index()
+
+    # selecting the color palette (blue)
+    color_base = sb.color_palette()[0]
+
+    sb.barplot(x = 'index',
+                y = df3FilterdGas_T[df3FilterdGas_T.columns[1]],
+                data = df3FilterdGas_T,
+                color = color_base)
+
+
+    plt.title(userValue + ' GAS Distribution');
+    plt.xlabel('');
+    plt.ylabel('Gas Volume (BSm3)')
+
+    # Show the plot
+    plt.show()
+    plt.xticks(fontsize=6)
+    col2.pyplot()
+
+#===========================================================================================
 
 def plot_multi2(data,userValues,xtime, cols=None, spacing=.05, **kwargs):
 
@@ -368,7 +436,7 @@ def plot_multi4(data,userValues, cols=None, spacing=.05, **kwargs):
     ax.legend(lines, labels, loc=0)
     return ax
 
-ans = st.radio('Would you like to indicate a Time interval for ploting?',('No','Yes'))
+ans = st.radio('Would you like to indicate a time interval for ploting?',('No','Yes'))
 if ans.lower() == 'yes':
     statrtTime = st.text_input("Enter a Start year: ", '1990')
     endTime = st.text_input("Enter an End year: ", '2022')
@@ -395,7 +463,7 @@ for i in range(len(userValues)-1):
     dftt_newcSUM[userValues[i] + ' Cumulative Production'] = dftt_newcSUM[userValues[i]].cumsum()
 
 # show table
-Numrows = st.text_input("Enter Number of rows to show in the table: ", '5')
+Numrows = st.text_input("Please select the number of months with recent production you would like to display", '5')
 st.text('Last ' + Numrows + ' rows of Filtered Data')
 st.dataframe(dftt_newcSUM.tail(int(Numrows)))
 
@@ -416,7 +484,7 @@ st.text('Description Data')
 st.dataframe(d)
 
 # creating 5 columns of text to show description
-with st.beta_expander('Show full description',False):
+with st.beta_expander('Click here to show full description',False):
     col1,col2,col3,col4,col5 = st.beta_columns(5)
     col1.markdown("<h1 style='text-align: center; font-size:20px;'>Development</h1>", unsafe_allow_html=True)
     col1.success(str(d['Development '].values[0]))
@@ -597,7 +665,7 @@ if st.button('Plot Group Graphs'):
 
         plt.title('Oil Production');
         #plt.xlabel('Time');
-        plt.ylabel('Production');
+        plt.ylabel('Production Rate (MSm3/Month)');
 
         # round
         datemin = 0
@@ -754,18 +822,19 @@ if st.button('Plot Group Graphs'):
 
 
     #===============================================================================================================================================================#
+
+
+if (answer == 'individual' or answer =='both' or len(graphNum) ==1):
+    lstdf = []
+    for i in range(len(userValues)-1):
+        dfcSum = df_new.copy()
+        dfcSum = dfcSum[[userValues[-1],userValues[i]]]
+        dfcSum.set_index('Time', inplace=True)
+        dfcSum[userValues[i] + ' Cumulative'] = dfcSum[userValues[i]].cumsum()    
+        lstdf.append(dfcSum)
 if st.button('Plot Individual Graphs'):
     st.header('Individual Graphs')
-
-    if (answer == 'individual' or answer =='both' or len(graphNum) ==1):
-        lstdf = []
-        for i in range(len(userValues)-1):
-            dfcSum = df_new.copy()
-            dfcSum = dfcSum[[userValues[-1],userValues[i]]]
-            dfcSum.set_index('Time', inplace=True)
-            dfcSum[userValues[i] + ' Cumulative'] = dfcSum[userValues[i]].cumsum()    
-            lstdf.append(dfcSum)
-
+    
     if (answer == 'individual' or answer == 'both' or len(graphNum) ==1) and (len(userValues)-1>=1) :
         userValuesclr = userValues.copy()
         #del userValuesclr[-3:]
@@ -1066,3 +1135,18 @@ if st.button('Plot Calculations Graphs'):
         plt.title(str(userValue)+ ' Water Cut');
         plt.xlabel('Time');
         st.pyplot()
+
+
+# Export data
+
+df_all = pd.merge(df_new,df_newcSUM, on='Time')
+df_all = pd.merge(df_all,dfCalc, on='Time')
+
+def DownloadFunc(df):
+
+    csv = df.to_csv(index=False)
+    b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
+    href = f'<a href="data:file/csv;base64,{b64}" download="Data.csv">Download data as csv file</a>'
+    return href
+
+st.markdown(DownloadFunc(df_all), unsafe_allow_html=True)
