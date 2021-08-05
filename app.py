@@ -140,7 +140,7 @@ with st.beta_expander('Click here to show histograms',False):
     df3FilterdGas_T = df3FilterdGas.T.reset_index()
 
     # selecting the color palette (blue)
-    color_base = sb.color_palette()[0]
+    color_base = sb.color_palette()[3]
 
     sb.barplot(x = 'index',
                 y = df3FilterdGas_T[df3FilterdGas_T.columns[1]],
@@ -834,7 +834,7 @@ if (answer == 'individual' or answer =='both' or len(graphNum) ==1):
         lstdf.append(dfcSum)
 if st.button('Plot Individual Graphs'):
     st.header('Individual Graphs')
-    
+
     if (answer == 'individual' or answer == 'both' or len(graphNum) ==1) and (len(userValues)-1>=1) :
         userValuesclr = userValues.copy()
         #del userValuesclr[-3:]
@@ -936,10 +936,10 @@ if st.button('Plot Individual Graphs'):
 # Calculating GOR and CGR
 dfCalc = df_new.copy()
 if ('GAS' in userValues) & ('OIL' in userValues):
-    dfCalc['GOR'] = ((dfCalc['GAS'])/(dfCalc['OIL']))
+    dfCalc['GOR'] = ((dfCalc['GAS']*1000)/(dfCalc['OIL']))
 
 if ('GAS' in userValues) & ('CONDENSATE' in userValues):
-    dfCalc['CGR'] = ((dfCalc['CONDENSATE'])/(dfCalc['GAS']))
+    dfCalc['CGR'] = ((dfCalc['CONDENSATE'])/(dfCalc['GAS']*1000))
 
 if ('WATER' in userValues) & ('OIL' in userValues):
     dfCalc['WOR'] = ((dfCalc['WATER'])/(dfCalc['OIL']))
@@ -1138,6 +1138,15 @@ if st.button('Plot Calculations Graphs'):
 
 
 # Export data
+if 'GAS' in userValues:
+    df_new.set_index(['Time','GAS'],inplace=True)
+    df_new.columns += ' [MSm3]'
+    df_new.reset_index(inplace=True)
+    df_new.rename(columns = {'GAS':'GAS [BSm3]'},inplace=True)
+else:
+    df_new.set_index(['Time'],inplace=True)
+    df_new.columns += ' [MSm3]'
+    df_new.reset_index(inplace=True)
 
 df_all = pd.merge(df_new,df_newcSUM, on='Time')
 df_all = pd.merge(df_all,dfCalc, on='Time')
@@ -1146,7 +1155,7 @@ def DownloadFunc(df):
 
     csv = df.to_csv(index=False)
     b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
-    href = f'<a href="data:file/csv;base64,{b64}" download="Data.csv">Download data as csv file</a>'
+    href = f'<a href="data:file/csv;base64,{b64}" download="{userValue}.csv">Download the data from ' + userValue + ' field as csv file</a>'
     return href
 
 st.markdown(DownloadFunc(df_all), unsafe_allow_html=True)
