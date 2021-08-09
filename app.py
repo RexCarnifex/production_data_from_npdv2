@@ -7,6 +7,11 @@ import matplotlib.pylab as plt
 import matplotlib.dates as mdates
 from matplotlib.ticker import FixedLocator
 import streamlit as st
+import os
+import zipfile
+import shutil
+
+
 st.set_option('deprecation.showPyplotGlobalUse', False)
 @st.cache
 def load_data():
@@ -58,7 +63,6 @@ dfMultOil = dfMultOil[dfMultOil['Field'].isin(lstOil)].pivot(index='Time', colum
 #=================================================== ============ ==================================
 
 
-# taking input from the user and checking if it's in prfInformationCarrier column
 # dropdown selecttion
 selection = st.selectbox('Select a Field to filtter with',lst) 
 userValue = selection
@@ -73,6 +77,13 @@ dft_new.rename(columns={'prfPrdOilGrossMillSm3': 'OIL', 'prfPrdGasGrossBillSm3':
 Columns = {'OIL':'prfPrdOilGrossMillSm3', 'GAS': 'prfPrdGasGrossBillSm3','CONDENSATE': 'prfPrdCondensateGrossMillSm3',
            'OE': 'prfPrdOeGrossMillSm3', 'WATER': 'prfPrdProducedWaterInFieldMillSm3' }
 
+# dropdown Unite selecttion
+uniteType = st.selectbox('Select a unite for oil production',['Sm3','STB']) 
+
+# Change Unite to STB
+#if uniteType == "STB":
+#    df_new['OIL'] = df_new['OIL']/0.159
+#    dft_new['OIL'] = dft_new['OIL']/0.159
 
 columnNames = list(Columns.keys())
 
@@ -95,6 +106,39 @@ df_new.reset_index(drop=True, inplace=True)
 
 dft_new.set_index('Time', inplace=True)
 
+# create file for images
+current_directory = os.getcwd()
+final_directory = os.path.join(current_directory, r'Group Plots')
+final_directory2 = os.path.join(current_directory, r'Individual Plots')
+final_directory3 = os.path.join(current_directory, r'Calculation Plots')
+
+if os.path.exists(final_directory):
+    shutil.rmtree(final_directory)
+if os.path.exists(final_directory2):
+    shutil.rmtree(final_directory2)
+if os.path.exists(final_directory3):
+    shutil.rmtree(final_directory3)
+
+if not os.path.exists(final_directory):
+   os.makedirs(final_directory)
+if not os.path.exists(final_directory2):
+   os.makedirs(final_directory2)
+if not os.path.exists(final_directory3):
+   os.makedirs(final_directory3)
+
+def zipdir(path, ziph):
+    # ziph is zipfile handle
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            ziph.write(os.path.join(root, file))
+
+# download plots
+def get_binary_file_downloader_html(bin_file, file_label='File'):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    bin_str = base64.b64encode(data).decode()
+    href = f'<a href="data:application/octet-stream;base64,{bin_str}" download="{os.path.basename(bin_file)}">Download {file_label}</a>'
+    return href
 #============================================== Hist ========================================
 # mergeng the two dataframes
 dfHist = pd.merge(df1Hist, df2Hist, on='fldNpdidField')
@@ -113,13 +157,15 @@ df3Filtered = df3Filtered.rename(columns={'fldInplaceOil':'In place Oil','fldRec
 df3FilterdOil = df3Filtered[['In place Oil','Rec Oil','Remain Oil']]
 df3FilterdGas = df3Filtered[['Recoverable Gas','Remaining Gas','Gas in place Ass','in Place Free Gas']]
 
+if uniteType == 'STB':
+    df3FilterdOil = df3FilterdOil/0.159
 # convert the columns to rows for the bar chart (OIL)
 df3FilterdOil_T = df3FilterdOil.T.reset_index()
 
 # selecting the color palette (blue)
 color_base = sb.color_palette()[0]
 
-with st.beta_expander('Click here to show histograms',False):
+with st.beta_expander('Click here to show histograms',True):
     col1,col2 = st.beta_columns(2)
 
     sb.barplot(x = 'index',
@@ -128,12 +174,16 @@ with st.beta_expander('Click here to show histograms',False):
                 color=color_base)
     
 
-    plt.title(userValue + ' OIL Distribution');
+    plt.title( userValue + ' OIL Distribution');
     plt.xlabel('');
-    plt.ylabel(' Oil Volume (MSm3)')
+    if uniteType == 'STB':
+        plt.ylabel(' Oil Volume (STB)')
+    else:
+        plt.ylabel(' Oil Volume (MSm3)')
 
     # Show the plot
     plt.show()
+    plt.savefig(final_directory + '/' + userValue + ' OIL Distribution.png')
     col1.pyplot()
     
     # convert the columns to rows for the bar chart (GAS)
@@ -155,6 +205,7 @@ with st.beta_expander('Click here to show histograms',False):
     # Show the plot
     plt.show()
     plt.xticks(fontsize=6)
+    plt.savefig(final_directory + '/' + userValue + ' GAS Distribution.png')
     col2.pyplot()
 
 #===========================================================================================
@@ -303,7 +354,10 @@ def plot_multi3(data,userValues,xtime, cols=None, spacing=.05, **kwargs):
     elif (cols[0] == 'GAS Cumulative'):
         ax.set_ylabel(ylabel=cols[0]+ ' Production (BSm3)')
     elif (cols[0] == 'OIL Cumulative'):
-        ax.set_ylabel(ylabel=cols[0]+ ' Production (mSm3)')
+        if uniteType == 'STB':
+            ax.set_ylabel(ylabel=cols[0]+ ' Production (STB)')
+        else:
+            ax.set_ylabel(ylabel=cols[0]+ ' Production (MSm3)')
     elif (cols[0] == 'WATER Cumulative'):
         ax.set_ylabel(ylabel=cols[0]+ ' Production (MSm3)')
     elif (cols[0] == 'OE Cumulative'):
@@ -329,7 +383,10 @@ def plot_multi3(data,userValues,xtime, cols=None, spacing=.05, **kwargs):
         elif (cols[n] == 'GAS Cumulative'):
             ax_new.set_ylabel(ylabel=cols[n]+ ' Production (BSm3)')
         elif (cols[n] == 'OIL Cumulative'):
-            ax_new.set_ylabel(ylabel=cols[n]+ ' Production (MSm3)')
+            if uniteType == 'STB':
+                ax.set_ylabel(ylabel=cols[n]+ ' Production (STB)')
+            else:
+                ax.set_ylabel(ylabel=cols[n]+ ' Production (MSm3)')
         elif (cols[n] == 'WATER Cumulative'):
             ax_new.set_ylabel(ylabel=cols[n]+ ' Production (MSm3)')
         elif (cols[n] == 'OE Cumulative'):
@@ -465,7 +522,12 @@ for i in range(len(userValues)-1):
 # show table
 Numrows = st.text_input("Please select the number of months with recent production you would like to display", '5')
 st.text('Last ' + Numrows + ' rows of Filtered Data')
-st.dataframe(dftt_newcSUM.tail(int(Numrows)))
+if uniteType == 'STB':
+    dftt_newcSUMoil = dftt_newcSUM.copy()
+    dftt_newcSUMoil[['OIL','OIL Cumulative Production']] = dftt_newcSUMoil[['OIL','OIL Cumulative Production']]/0.159
+    st.dataframe(dftt_newcSUMoil.tail(int(Numrows)))
+else:
+    st.dataframe(dftt_newcSUM.tail(int(Numrows)))
 
 #--------------------------------------------------------------------------------------------------------------
 # description part
@@ -578,6 +640,7 @@ def plotMult1(df_new,dft_new,xtime):
                 ax.grid(axis='both', which='both')
 
                 plt.title(str(userValue)+ ' Field Production' );
+                plt.savefig(final_directory + '/' + userValue + ' Field Production time.png') 
                 st.pyplot()
             else:
 
@@ -614,12 +677,16 @@ def plotMult1(df_new,dft_new,xtime):
                 ax.grid(axis='both', which='both')
 
                 plt.title(str(userValue)+ ' Field Production' );
+                plt.savefig(final_directory + '/' + userValue + ' Field Production index.png') 
                 st.pyplot()
 
 if st.button('Plot Group Graphs'):
     st.header('Group Graphs')
     #=====================================MultiOil=======================================================
     if ('OIL' in userValues):
+        if uniteType == 'STB':
+            dfMultOil = dfMultOil/0.159
+
         years = mdates.YearLocator()   # every year
         months = mdates.MonthLocator()  # every month
         years_fmt = mdates.DateFormatter('%Y')
@@ -635,7 +702,10 @@ if st.button('Plot Group Graphs'):
             plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
         plt.title('Oil Production');
         plt.xlabel('Time');
-        plt.ylabel('Production Rate (MSm3/Month)');
+        if uniteType == 'STB':
+            plt.ylabel('Production Rate (STB/Month)');
+        else:
+            plt.ylabel('Production Rate (MSm3/Month)');
 
         # format the ticks
         ax.xaxis.set_major_locator(years)
@@ -648,6 +718,7 @@ if st.button('Plot Group Graphs'):
         ax.set_xlim(datemin, datemax)
 
         ax.grid(axis='both', which='both')
+        plt.savefig(final_directory + '/' + ' multiple oil fields time.png') 
         st.pyplot()
 
         # months indexes
@@ -665,7 +736,10 @@ if st.button('Plot Group Graphs'):
 
         plt.title('Oil Production');
         #plt.xlabel('Time');
-        plt.ylabel('Production Rate (MSm3/Month)');
+        if uniteType == 'STB':
+            plt.ylabel('Production Rate (STB/Month)');
+        else:
+            plt.ylabel('Production Rate (MSm3/Month)');
 
         # round
         datemin = 0
@@ -675,16 +749,19 @@ if st.button('Plot Group Graphs'):
         plt.xticks(np.arange(0, dfMultOilShifted.shape[0] +1, 12))
 
         ax.grid(axis='both', which='both')
+        plt.savefig(final_directory + '/' + ' multiple oil fields index.png')  
         st.pyplot()
+
+      
     #============================================================================================
 
+    if len(graphNum) !=1:
+        # ploting with Fluid Production
+        plotMult1(df_new,dft_new,'yes')
 
-    # ploting time with Fluid Production
-    plotMult1(df_new,dft_new,'yes')
-
-    # Trim Oil date Graph
-    if ('OIL' in userValues):
-        plotMult1(df_new,dft_new,'no')
+        # Trim Oil date Graph
+        if ('OIL' in userValues):
+            plotMult1(df_new,dft_new,'no')
 
 
     def plotMult2(df_newcSUM,dftt_newcSUM,xtime):
@@ -724,6 +801,7 @@ if st.button('Plot Group Graphs'):
                     ax.grid(axis='both', which='both')
 
                     plt.title(str(userValue)+ ' Field Cumulative Production' );
+                    plt.savefig(final_directory + '/' + userValue + ' Field Cumulative Production time.png') 
                     st.pyplot()
 
                 else:
@@ -758,6 +836,7 @@ if st.button('Plot Group Graphs'):
                     ax.grid(axis='both', which='both')
 
                     plt.title(str(userValue)+ ' Field Cumulative Production');
+                    plt.savefig(final_directory + '/' + userValue + ' Field Cumulative Production index.png') 
                     st.pyplot()
 
     #  ploting time with Fluid Production
@@ -774,14 +853,20 @@ if st.button('Plot Group Graphs'):
                 if xtime == 'yes':
                     for year in yearsx:
                         plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
+                    plot_multi3(dft_new,userValuesclr,xtime, figsize=(25, 10));
+
+                    plt.title(str(userValue)+ ' Field Production');
+                    plt.savefig(final_directory + '/' + userValue + ' Field Production time Multy.png') 
+                    st.pyplot()
                 else:
                     for tick in np.arange(0, dft_new.shape[0] +1, 12):
                         plt.axvline(tick,color='black',linewidth=1)
 
-                plot_multi3(dft_new,userValuesclr,xtime, figsize=(25, 10));
+                    plot_multi3(dft_new,userValuesclr,xtime, figsize=(25, 10));
 
-                plt.title(str(userValue)+ ' Field Production');
-                st.pyplot()
+                    plt.title(str(userValue)+ ' Field Production');
+                    plt.savefig(final_directory + '/' + userValue + ' Field Production index Multy.png') 
+                    st.pyplot()
 
     # ploting time with Fluid Production (Multiple y-axis)
     plotMultiy1(dft_new,'yes')
@@ -801,15 +886,22 @@ if st.button('Plot Group Graphs'):
                 if xtime == 'yes':
                     for year in yearsx:
                         plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
+                    plot_multi2(dftt_newcSUM,userValuesclr,xtime, figsize=(25, 10));
+                
+                    plt.title(str(userValue)+ ' Field Cumulative Production');
+                    plt.savefig(final_directory + '/' + userValue + ' Field Cumulative Production time Multy.png') 
+                    st.pyplot()
+
                 else:
                     for tick in np.arange(0, dftt_newcSUM.shape[0] +1, 12):
                         plt.axvline(tick,color='black',linewidth=1)
 
-                #df_newcSUM.set_index('Time', inplace=True)
-                plot_multi2(dftt_newcSUM,userValuesclr,xtime, figsize=(25, 10));
-                
-                plt.title(str(userValue)+ ' Field Cumulative Production');
-                st.pyplot()
+                    #df_newcSUM.set_index('Time', inplace=True)
+                    plot_multi2(dftt_newcSUM,userValuesclr,xtime, figsize=(25, 10));
+                    
+                    plt.title(str(userValue)+ ' Field Cumulative Production');
+                    plt.savefig(final_directory + '/' + userValue + ' Field Cumulative Production index Multy.png') 
+                    st.pyplot()
 
     # ploting time with Fluid Production (Multiple y-axis)
     plotMultiy2(dftt_newcSUM,'yes')
@@ -819,7 +911,11 @@ if st.button('Plot Group Graphs'):
         plotMultiy2(dftt_newcSUM.reset_index(drop=True),'no')
 
 
-
+    #create plots download link
+    zipf = zipfile.ZipFile('Group Plots.zip', 'w', zipfile.ZIP_DEFLATED)
+    zipdir('Group Plots', zipf)
+    zipf.close()
+    st.markdown(get_binary_file_downloader_html('Group Plots.zip', userValue + ' Group Plots'), unsafe_allow_html=True)
 
     #===============================================================================================================================================================#
 
@@ -828,6 +924,8 @@ if (answer == 'individual' or answer =='both' or len(graphNum) ==1):
     lstdf = []
     for i in range(len(userValues)-1):
         dfcSum = df_new.copy()
+        if ('OIL' in  userValues) & (uniteType =='STB'):
+            dfcSum['OIL'] = dfcSum['OIL']/0.159
         dfcSum = dfcSum[[userValues[-1],userValues[i]]]
         dfcSum.set_index('Time', inplace=True)
         dfcSum[userValues[i] + ' Cumulative'] = dfcSum[userValues[i]].cumsum()    
@@ -855,6 +953,7 @@ if st.button('Plot Individual Graphs'):
     
         else:
             plt.title(str(userValue)+ ' Field ' + lstdf[0].columns.to_list()[0] + ' Production');
+        plt.savefig(final_directory2 + '/' + userValue + ' Field ' + lstdf[0].columns.to_list()[0] + ' Production.png') 
         st.pyplot()
         
 
@@ -874,6 +973,7 @@ if st.button('Plot Individual Graphs'):
             plt.title(str(userValue)+ ' Field '  + lstdf[1].columns.to_list()[0] + ' Production');
         else:
             plt.title(str(userValue)+ ' Field ' + lstdf[1].columns.to_list()[0] + ' Production');
+        plt.savefig(final_directory2 + '/' + userValue + ' Field ' + lstdf[1].columns.to_list()[0] + ' Production.png') 
         st.pyplot()
 
     if (answer == 'individual' or answer == 'both' or len(graphNum) ==1) and len(userValues)-1>=3:
@@ -891,6 +991,7 @@ if st.button('Plot Individual Graphs'):
             plt.title(str(userValue)+ ' Field ' + lstdf[2].columns.to_list()[0] + ' Production');
         else:
             plt.title(str(userValue)+ ' Field ' + lstdf[2].columns.to_list()[0] + ' Production');
+        plt.savefig(final_directory2 + '/' + userValue +  ' Field ' + lstdf[2].columns.to_list()[0] + ' Production.png') 
         st.pyplot()
 
 
@@ -909,6 +1010,7 @@ if st.button('Plot Individual Graphs'):
             plt.title(str(userValue)+ ' Field ' + lstdf[3].columns.to_list()[0] + ' Production');
         else:
             plt.title(str(userValue)+ ' Field ' + lstdf[3].columns.to_list()[0] + ' Production');
+        plt.savefig(final_directory2 + '/' + userValue +  ' Field ' + lstdf[3].columns.to_list()[0] + ' Production.png') 
         st.pyplot()
 
 
@@ -927,11 +1029,15 @@ if st.button('Plot Individual Graphs'):
             plt.title(str(userValue)+ ' Field ' + lstdf[4].columns.to_list()[0] + ' Production');
         else:
             plt.title(str(userValue)+ ' Field ' + lstdf[4].columns.to_list()[0] + ' Production');
+        plt.savefig(final_directory2 + '/' + userValue  + ' Field ' + lstdf[4].columns.to_list()[0] + ' Production.png') 
         st.pyplot()
 
 
-
-
+    #create plots download link
+    zipf = zipfile.ZipFile('individual Plots.zip', 'w', zipfile.ZIP_DEFLATED)
+    zipdir('individual Plots', zipf)
+    zipf.close()
+    st.markdown(get_binary_file_downloader_html('individual Plots.zip', userValue + ' individual Plots'), unsafe_allow_html=True)
 #===============================================================================================================================================================#
 # Calculating GOR and CGR
 dfCalc = df_new.copy()
@@ -1008,6 +1114,7 @@ if st.button('Plot Calculations Graphs'):
         plt.xlabel('Time');
         plt.ylabel('Gas Oil Ratio (fraction)');
         ax.grid(axis='both', which='both')
+        plt.savefig(final_directory3 + '/' + str(userValue)+ ' Gas Oil Ratio.png') 
         st.pyplot()
 
     elif ('GAS' in userValues) & ('OIL' in userValues) & (userVal == 'yes'):
@@ -1018,6 +1125,7 @@ if st.button('Plot Calculations Graphs'):
         plot_multi4(dfCalc2[['GOR','GAS','OIL']],colorscalc, figsize=(20, 10));
         plt.title(str(userValue)+ ' Gas Oil Ratio');
         plt.xlabel('Time');
+        plt.savefig(final_directory3 + '/' + str(userValue)+ ' Gas Oil Ratio.png') 
         st.pyplot()
 
 
@@ -1050,6 +1158,7 @@ if st.button('Plot Calculations Graphs'):
         plt.xlabel('Time');
         plt.ylabel('CONDENSATE GAS Ratio (fraction)');
         ax.grid(axis='both', which='both')
+        plt.savefig(final_directory3 + '/' + str(userValue)+ ' CONDENSATE GAS Ratio.png') 
         st.pyplot()
 
     elif ('GAS' in userValues) & ('CONDENSATE' in userValues) & (userVal == 'yes'):
@@ -1060,6 +1169,7 @@ if st.button('Plot Calculations Graphs'):
         plot_multi4(dfCalc2[['CGR','GAS','CONDENSATE']],colorscalc, figsize=(20, 10));
         plt.title(str(userValue)+ ' CONDENSATE GAS Ratio');
         plt.xlabel('Time');
+        plt.savefig(final_directory3 + '/' + str(userValue)+ ' CONDENSATE GAS Ratio.png') 
         st.pyplot()
 
 
@@ -1092,6 +1202,7 @@ if st.button('Plot Calculations Graphs'):
         plt.xlabel('Time');
         plt.ylabel('Water Oil Ratio (fraction)');
         ax.grid(axis='both', which='both')
+        plt.savefig(final_directory3 + '/' + str(userValue)+ ' Water Oil Ratio.png') 
         st.pyplot()
 
 
@@ -1124,6 +1235,7 @@ if st.button('Plot Calculations Graphs'):
         plt.xlabel('Time');
         plt.ylabel('Water Cut (fraction)');
         ax.grid(axis='both', which='both')
+        plt.savefig(final_directory3 + '/' + str(userValue)+ ' Water Cut.png') 
         st.pyplot()
 
     elif ('GAS' in userValues) & ('WATER' in userValues) & (userVal == 'yes'):
@@ -1134,9 +1246,17 @@ if st.button('Plot Calculations Graphs'):
         plot_multi4(dfCalc2[['WCUT','OIL','WATER']],colorscalc, figsize=(20, 10));
         plt.title(str(userValue)+ ' Water Cut');
         plt.xlabel('Time');
+        plt.savefig(final_directory3 + '/' + str(userValue)+ ' Water Cut.png') 
         st.pyplot()
 
+    #create plots download link
+    zipf = zipfile.ZipFile('Calculation Plots.zip', 'w', zipfile.ZIP_DEFLATED)
+    zipdir('Calculation Plots', zipf)
+    zipf.close()
 
+    st.markdown(get_binary_file_downloader_html('Calculation Plots.zip', userValue + ' Calculation Plots'), unsafe_allow_html=True)
+
+#==============================================================================================================================================================
 # Export data
 if 'GAS' in userValues:
     df_new.set_index(['Time','GAS'],inplace=True)
@@ -1152,7 +1272,6 @@ df_all = pd.merge(df_new,df_newcSUM, on='Time')
 df_all = pd.merge(df_all,dfCalc, on='Time')
 
 def DownloadFunc(df):
-
     csv = df.to_csv(index=False)
     b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
     href = f'<a href="data:file/csv;base64,{b64}" download="{userValue}.csv">Download the data from ' + userValue + ' field as csv file</a>'
