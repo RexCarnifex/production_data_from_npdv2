@@ -640,7 +640,7 @@ def plotMult1(df_new,dft_new,xtime):
                 ax.grid(axis='both', which='both')
 
                 plt.title(str(userValue)+ ' Field Production' );
-                plt.savefig(final_directory + '/' + userValue + ' Field Production time.png') 
+                plt.savefig(final_directory + '/' + userValue + ' field production year.png') 
                 st.pyplot()
             else:
 
@@ -677,7 +677,7 @@ def plotMult1(df_new,dft_new,xtime):
                 ax.grid(axis='both', which='both')
 
                 plt.title(str(userValue)+ ' Field Production' );
-                plt.savefig(final_directory + '/' + userValue + ' Field Production index.png') 
+                plt.savefig(final_directory + '/' + userValue + ' field production month.png') 
                 st.pyplot()
 
 if st.button('Plot Group Graphs'):
@@ -718,7 +718,7 @@ if st.button('Plot Group Graphs'):
         ax.set_xlim(datemin, datemax)
 
         ax.grid(axis='both', which='both')
-        plt.savefig(final_directory + '/' + ' multiple oil fields time.png') 
+        plt.savefig(final_directory + '/' + ' multiple fields oil rate year.png') 
         st.pyplot()
 
         # months indexes
@@ -749,7 +749,7 @@ if st.button('Plot Group Graphs'):
         plt.xticks(np.arange(0, dfMultOilShifted.shape[0] +1, 12))
 
         ax.grid(axis='both', which='both')
-        plt.savefig(final_directory + '/' + ' multiple oil fields index.png')  
+        plt.savefig(final_directory + '/' + ' multiple fields oil rate month.png')  
         st.pyplot()
 
       
@@ -801,7 +801,7 @@ if st.button('Plot Group Graphs'):
                     ax.grid(axis='both', which='both')
 
                     plt.title(str(userValue)+ ' Field Cumulative Production' );
-                    plt.savefig(final_directory + '/' + userValue + ' Field Cumulative Production time.png') 
+                    plt.savefig(final_directory + '/' + userValue + ' field cumulative production year.png') 
                     st.pyplot()
 
                 else:
@@ -836,7 +836,7 @@ if st.button('Plot Group Graphs'):
                     ax.grid(axis='both', which='both')
 
                     plt.title(str(userValue)+ ' Field Cumulative Production');
-                    plt.savefig(final_directory + '/' + userValue + ' Field Cumulative Production index.png') 
+                    plt.savefig(final_directory + '/' + userValue + ' field cumulative production month.png') 
                     st.pyplot()
 
     #  ploting time with Fluid Production
@@ -856,7 +856,7 @@ if st.button('Plot Group Graphs'):
                     plot_multi3(dft_new,userValuesclr,xtime, figsize=(25, 10));
 
                     plt.title(str(userValue)+ ' Field Production');
-                    plt.savefig(final_directory + '/' + userValue + ' Field Production time Multy.png') 
+                    plt.savefig(final_directory + '/' + userValue + ' field production year multy.png') 
                     st.pyplot()
                 else:
                     for tick in np.arange(0, dft_new.shape[0] +1, 12):
@@ -865,7 +865,7 @@ if st.button('Plot Group Graphs'):
                     plot_multi3(dft_new,userValuesclr,xtime, figsize=(25, 10));
 
                     plt.title(str(userValue)+ ' Field Production');
-                    plt.savefig(final_directory + '/' + userValue + ' Field Production index Multy.png') 
+                    plt.savefig(final_directory + '/' + userValue + ' field production month multy.png') 
                     st.pyplot()
 
     # ploting time with Fluid Production (Multiple y-axis)
@@ -889,7 +889,7 @@ if st.button('Plot Group Graphs'):
                     plot_multi2(dftt_newcSUM,userValuesclr,xtime, figsize=(25, 10));
                 
                     plt.title(str(userValue)+ ' Field Cumulative Production');
-                    plt.savefig(final_directory + '/' + userValue + ' Field Cumulative Production time Multy.png') 
+                    plt.savefig(final_directory + '/' + userValue + ' Field Cumulative Production year Multy.png') 
                     st.pyplot()
 
                 else:
