@@ -155,7 +155,7 @@ df3Filtered = df3Filtered.rename(columns={'fldInplaceOil':'In place Oil','fldRec
 
 # split the filterd dataframe into two dataframes one for oil and for gas
 df3FilterdOil = df3Filtered[['In place Oil','Recoverable Oil','Remaining Oil']]
-df3FilterdGas = df3Filtered['In Place Free Gas','Gas in place Ass','Recoverable Gas','Remaining Gas']]
+df3FilterdGas = df3Filtered[['In Place Free Gas','Gas in place Ass','Recoverable Gas','Remaining Gas']]
 
 if uniteType == 'STB':
     df3FilterdOil = df3FilterdOil/0.159
