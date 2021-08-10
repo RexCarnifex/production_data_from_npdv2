@@ -150,12 +150,12 @@ dfHist = dfHist[['fldName_x','fldInplaceOil', 'fldRecoverableOil', 'fldRemaining
 df3Filtered = dfHist[dfHist['fldName_x'] == userValue]
 
 # rename columns
-df3Filtered = df3Filtered.rename(columns={'fldInplaceOil':'In place Oil','fldRecoverableOil':'Rec Oil','fldRemainingOil':'Remain Oil',
-                   'fldRecoverableGas':'Recoverable Gas','fldRemainingGas':'Remaining Gas','fldInplaceAssGas':'Gas in place Ass','fldInplaceFreeGas':'in Place Free Gas'})
+df3Filtered = df3Filtered.rename(columns={'fldInplaceOil':'In place Oil','fldRecoverableOil':'Recoverable Oil','fldRemainingOil':'Remaining Oil',
+                   'fldRecoverableGas':'Recoverable Gas','fldRemainingGas':'Remaining Gas','fldInplaceAssGas':'Gas in place Ass','fldInplaceFreeGas':'In Place Free Gas'})
 
 # split the filterd dataframe into two dataframes one for oil and for gas
-df3FilterdOil = df3Filtered[['In place Oil','Rec Oil','Remain Oil']]
-df3FilterdGas = df3Filtered[['Recoverable Gas','Remaining Gas','Gas in place Ass','in Place Free Gas']]
+df3FilterdOil = df3Filtered[['In place Oil','Recoverable Oil','Remaining Oil']]
+df3FilterdGas = df3Filtered['In Place Free Gas','Gas in place Ass','Recoverable Gas','Remaining Gas']]
 
 if uniteType == 'STB':
     df3FilterdOil = df3FilterdOil/0.159
