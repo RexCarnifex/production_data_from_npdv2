@@ -889,7 +889,7 @@ if st.button('Plot Group Graphs'):
                     plot_multi2(dftt_newcSUM,userValuesclr,xtime, figsize=(25, 10));
                 
                     plt.title(str(userValue)+ ' Field Cumulative Production');
-                    plt.savefig(final_directory + '/' + userValue + ' Field Cumulative Production year Multy.png') 
+                    plt.savefig(final_directory + '/' + userValue + ' field cumulative production year multy.png') 
                     st.pyplot()
 
                 else:
@@ -900,7 +900,7 @@ if st.button('Plot Group Graphs'):
                     plot_multi2(dftt_newcSUM,userValuesclr,xtime, figsize=(25, 10));
                     
                     plt.title(str(userValue)+ ' Field Cumulative Production');
-                    plt.savefig(final_directory + '/' + userValue + ' Field Cumulative Production index Multy.png') 
+                    plt.savefig(final_directory + '/' + userValue + ' field cumulative production month multy.png') 
                     st.pyplot()
 
     # ploting time with Fluid Production (Multiple y-axis)
