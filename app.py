@@ -18,6 +18,7 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 
 st.set_page_config(layout="wide")
 
+
 @st.cache
 def load_data():
     df = pd.read_csv('https://factpages.npd.no/ReportServer_npdpublic?/FactPages/tableview/field_production_gross_monthly&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false')
@@ -558,22 +559,153 @@ df_Field_Reserves = df_Field_Reserves[['fldNpdidField','fldName']]
 df_wells = pd.merge(df_Wellbore_development,df_Field_Reserves, on='fldNpdidField')
 
 df_wells.drop(columns=['fldNpdidField'],inplace=True)
+# get the count wells df
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+dfWellsAllFields = df_wells.copy()
+dfYwellsAllFields = dfWellsAllFields[dfWellsAllFields['wlbWellboreName'].str.find('Y') !=-1]
+dfYwellsAllFields = dfYwellsAllFields.groupby('fldName')['wlbWellboreName'].count()
+dfYwellsAllFields = dfYwellsAllFields.reset_index()
+wells_dict = dfYwellsAllFields.set_index('fldName')['wlbWellboreName'].to_dict()
+
+wellsCountDF = dfWellsAllFields.groupby('fldName')['wlbWellboreName'].count()
+wellsCountDF = wellsCountDF.reset_index()
+wellsCountDF['YwlbWellboreName'] = wellsCountDF['fldName'].map(wells_dict)
+wellsCountDF = wellsCountDF.fillna(0)
+wellsCountDF['YwlbWellboreName'] = wellsCountDF['YwlbWellboreName'].astype(int)
+wellsCountDF = wellsCountDF.rename(columns={'wlbWellboreName':'well count','YwlbWellboreName':'well count y'})
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 df_wells = df_wells[df_wells['fldName'] == userValue].set_index(['fldName'])
 
 st.text("Well's field information. The total number of wells:" + str(df_wells['wlbWellboreName'].nunique()))
+# Num of wells name that have Y in it
+df_wellsY = df_wells[df_wells['wlbWellboreName'].str.find('Y') !=-1]
+yCount = df_wellsY.shape[0]
+st.text("The total number of Y wells:" + str(yCount))
+
 # dropdown status selecttion
 stlst = df_wells['wlbStatus'].unique()
 stselc = st.selectbox('Select a status to filtter with',stlst) 
 
 st.dataframe(df_wells[df_wells['wlbStatus'] == stselc])
+# save the well count df with the main well
+#--------------------------------------------------------------
+from pandas import ExcelWriter
+w = ExcelWriter('Wells.xlsx')
+dfWellsAllFields.to_excel(w, sheet_name='Sheet0',index=False)
+wellsCountDF.to_excel(w, sheet_name='Sheet1',index=False)
+w.save()
 
+st.markdown(get_binary_file_downloader_html('Wells.xlsx', 'Well count and the main well data'), unsafe_allow_html=True)
+#--------------------------------------------------------------
+
+fluidsListPR = df_wells[df_wells['wlbStatus'] == 'PRODUCING']['wlbContent'].value_counts().index.to_list()
+fluidsListING = df_wells[df_wells['wlbStatus'] == 'INJECTING']['wlbContent'].value_counts().index.to_list()
 # Show Status Hist
 with st.beta_expander("Click here to show well's status histograms",False):
+    col1,col2 = st.beta_columns(2)
+    #get oil and gas series
+    def getSeries(status,fluid):
+        oilPRODUCINGdict = df_wells[df_wells['wlbContent'] == fluid]['wlbStatus'][df_wells[df_wells['wlbContent'] == fluid]['wlbStatus'] ==status].value_counts()
+        oilPRODUCINGdict = {status + ' '+ fluid :oilPRODUCINGdict[0]}
+        oilPRODUCINGdict = pd.Series(oilPRODUCINGdict)
+        return oilPRODUCINGdict
+
     df_wells['wlbStatus'].value_counts().plot(kind='bar',figsize=(6, 3));
-    plt.xticks(fontsize=4,rotation=0)
+    plt.xticks(fontsize=4.3,rotation=0)
+    plt.ylabel('Frequency')
     plt.title( userValue + ' Status Distribution');
-    plt.savefig(final_directory + '/' + userValue + ' well histogram.png')
+    plt.savefig(final_directory + '/' + userValue + " well's status histogram.png")
+    col1.pyplot()
+
+    df_wells['wlbContent'].value_counts().plot(kind='bar',figsize=(6, 3));
+    plt.xticks(fontsize=5,rotation=0)
+    plt.ylabel('Frequency')
+    plt.title( userValue + ' Content Distribution');
+    plt.savefig(final_directory + '/' + userValue + " well's content histogram.png")
+    col2.pyplot()
+
+    #get oil, gas, water series (call the fun) and append the oil,gas,water 
+    if 'OIL' in fluidsListPR:
+        oilPRODUCINGdser = getSeries('PRODUCING','OIL')
+        statusHist = df_wells['wlbStatus'].value_counts().append(oilPRODUCINGdser)
+    if 'GAS' in fluidsListPR:
+        gasPRODUCINGdser = getSeries('PRODUCING','GAS')
+        statusHist = statusHist.append(gasPRODUCINGdser)
+    if 'WATER' in fluidsListING:
+        waterINJECTINGGdser = getSeries('INJECTING','WATER')
+        statusHist = statusHist.append(waterINJECTINGGdser)
+    if 'GAS' in fluidsListING:
+        gasINJECTINGdser = getSeries('INJECTING','GAS')
+        statusHist = statusHist.append(gasINJECTINGdser)
+    
+    statusHist = statusHist.sort_values(ascending=False)
+    
+
+
+    statusHist = statusHist.reset_index()
+    statusHist = statusHist.sort_values('index')
+    statusHist = statusHist.set_index('index')
+    fluidsStatList = statusHist.index.to_list()
+    
+    #plot the statusHist
+    p = statusHist.plot(kind='bar',figsize=(8, 3),legend=False);
+
+    if 'PRODUCING OIL' in fluidsStatList:
+        oilIndex = fluidsStatList.index('PRODUCING OIL')
+        p.patches[oilIndex].set_color('green')
+    if 'PRODUCING GAS' in fluidsStatList:
+        GASIndex = fluidsStatList.index('PRODUCING GAS')
+        p.patches[GASIndex].set_color('red')
+    if 'INJECTIN GWATER' in fluidsStatList:
+        GASIndex = fluidsStatList.index('INJECTING WATER')
+        p.patches[GASIndex].set_color('blue')
+    if 'INJECTING GAS' in fluidsStatList:
+        GASIndex = fluidsStatList.index('INJECTING GAS')
+        p.patches[GASIndex].set_color('red')
+
+    plt.xticks(fontsize=3,rotation=0)
+    plt.ylabel('Frequency')
+    plt.xlabel('')
+    plt.title( userValue + ' Status Distribution');
+    plt.savefig(final_directory + '/' + userValue + " well's status2 histogram.png")
     st.pyplot()
+
+    col1,col2 = st.beta_columns(2)
+    
+    
+    p = df_wells[df_wells['wlbStatus'] == 'PRODUCING']['wlbContent'].value_counts().plot(kind='bar',figsize=(6, 3));
+
+    if 'OIL' in fluidsListPR:
+        oilIndex = fluidsListPR.index('OIL')
+        p.patches[oilIndex].set_color('green')
+    if 'GAS' in fluidsListPR:
+        GASIndex = fluidsListPR.index('GAS')
+        p.patches[GASIndex].set_color('red')
+
+    plt.xticks(fontsize=4,rotation=0)
+    plt.ylabel('Frequency')
+    plt.title( userValue + ' PRODUCING Fluids Distribution');
+    plt.savefig(final_directory + '/' + userValue + " well's producing fluids histogram.png")
+    col1.pyplot()
+
+    p = df_wells[df_wells['wlbStatus'] == 'INJECTING']['wlbContent'].value_counts().plot(kind='bar',figsize=(6, 3));
+
+    if 'WATER' in fluidsListING:
+        waterIndex = fluidsListING.index('WATER')
+        p.patches[waterIndex].set_color('blue')
+    if 'GAS' in fluidsListING:
+        GASIndex = fluidsListING.index('GAS')
+        p.patches[GASIndex].set_color('red')
+    if 'OIL' in fluidsListING:
+        OILIndex = fluidsListING.index('OIL')
+        p.patches[OILIndex].set_color('green')
+    
+    plt.xticks(fontsize=4,rotation=0)
+    plt.ylabel('Frequency')
+    plt.title( userValue + ' INJECTING Fluids Distribution');
+    plt.savefig(final_directory + '/' + userValue + " well's injecting fluids histogram.png")
+    col2.pyplot()
 #--------------------------------------------------------------------------------------------------------------
 # description part
 dfINFO = pd.read_csv('https://factpages.npd.no/ReportServer_npdpublic?/FactPages/tableview/field_description&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false')
