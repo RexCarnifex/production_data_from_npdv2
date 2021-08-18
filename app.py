@@ -194,7 +194,7 @@ df3FilterdOil_T = df3FilterdOil.T.reset_index()
 # selecting the color palette (blue)
 color_base = sb.color_palette()[0]
 
-with st.beta_expander('Click to hide histograms',True):
+with st.beta_expander('Click to hide/show histograms',True):
     col1,col2 = st.beta_columns(2)
 
     ax = sb.barplot(x = 'index',
@@ -212,6 +212,7 @@ with st.beta_expander('Click to hide histograms',True):
 
     # Show the plot
     plt.show()
+    plt.xticks(fontsize=8)
     plt.savefig(final_directory + '/' + userValue + ' Oil Volumes.png')
     col1.pyplot()
     
@@ -228,13 +229,13 @@ with st.beta_expander('Click to hide histograms',True):
 
     ax.bar_label(ax.containers[0]);
     
-    plt.title(userValue + ' Oil Volumes');
+    plt.title(userValue + ' Gil Volumes');
     plt.xlabel('');
     plt.ylabel('Gas Volume (BSm3)')
 
     # Show the plot
     plt.show()
-    plt.xticks(fontsize=6)
+    plt.xticks(fontsize=8)
     plt.savefig(final_directory + '/' + userValue + ' Gas Volumes.png')
     col2.pyplot()
 
