@@ -32,6 +32,8 @@ def load_data():
     #
     # Field - Reserves
     df_Field_Reserves = pd.read_csv('https://factpages.npd.no/ReportServer_npdpublic?/FactPages/tableview/field_reserves&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false')
+    
+    df_Wellbore_Exploration_All = pd.read_csv('https://factpages.npd.no/ReportServer_npdpublic?/FactPages/tableview/wellbore_exploration_all&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false')
 
     #df = pd.read_csv('data.csv')
     # make a new time column
@@ -57,11 +59,11 @@ def load_data():
     i = lst.index("TROLL")
     lst[i], lst[0] = lst[0], lst[i]
 
-    return df,dft,lst,df1,df2,df_Wellbore_development,df_Field_Reserves
+    return df,dft,lst,df1,df2,df_Wellbore_development,df_Field_Reserves,df_Wellbore_Exploration_All
 
 
 #Load data
-df,dft,lst,df1Hist,df2Hist,df_Wellbore_development,df_Field_Reserves = load_data()
+df,dft,lst,df1Hist,df2Hist,df_Wellbore_development,df_Field_Reserves,df_Wellbore_Exploration_All = load_data()
 
 #=================================================== Multiple oil ==================================
 # Multiselect
@@ -74,7 +76,22 @@ dfMultOil = dfMultOil[dfMultOil['Field'].isin(lstOil)].pivot(index='Years', colu
 
 #=================================================== ============ ==================================
 
+#================================================= Wellbore Exploration All rex code=========================
+# drop empty values in fldNpdidField column
+df_Wellbore_Exploration_All = df_Wellbore_Exploration_All[df_Wellbore_Exploration_All['fldNpdidField'].notna()]
 
+# change fldNpdidField type to int so it matches the other two dataframes
+df_Wellbore_Exploration_All['fldNpdidField'] = df_Wellbore_Exploration_All['fldNpdidField'].astype(int)
+
+# Selecting columns to be used in analysis
+df_new = df_Wellbore_Exploration_All[['wlbWellboreName','wlbDrillingOperator', 'fldNpdidField', 'wlbProductionLicence', 'wlbStatus', 'wlbWellType', 'wlbContent', 'wlbMainArea', 'wlbFormationWithHc1','wlbAgeWithHc1','wlbFormationWithHc2','wlbAgeWithHc2','wlbFormationWithHc3','wlbAgeWithHc3']]
+
+# Merge df_new on df_Field_Reserves (Field Reserves to get FieldID and Field Names)
+df_Wellbore_Exploration_All_and_Reserves = pd.merge(df_new, df_Field_Reserves, how='left', on='fldNpdidField')
+
+# Removing All conlumns except for fldname
+df_Wellbore_Exploration_All_and_Reserves.drop(['fldRecoverableOil','fldRecoverableGas','fldRecoverableNGL','fldRecoverableCondensate','fldRecoverableOE','fldRemainingOil','fldRemainingGas','fldRemainingNGL','fldRemainingCondensate','fldRemainingOE','fldDateOffResEstDisplay','DatesyncNPD'], axis=1, inplace=True)
+#===================================================================================================
 # dropdown selecttion
 selection = st.selectbox('Select a Field to filtter with',lst) 
 userValue = selection
@@ -180,11 +197,11 @@ color_base = sb.color_palette()[0]
 with st.beta_expander('Click here to show histograms',True):
     col1,col2 = st.beta_columns(2)
 
-    sb.barplot(x = 'index',
+    ax = sb.barplot(x = 'index',
                 y = df3FilterdOil_T[df3FilterdOil_T.columns[1]],
                 data = df3FilterdOil_T,
                 color=color_base)
-    
+    ax.bar_label(ax.containers[0]);
 
     plt.title( userValue + ' OIL Distribution');
     plt.xlabel('');
@@ -204,12 +221,13 @@ with st.beta_expander('Click here to show histograms',True):
     # selecting the color palette (blue)
     color_base = sb.color_palette()[3]
 
-    sb.barplot(x = 'index',
+    ax = sb.barplot(x = 'index',
                 y = df3FilterdGas_T[df3FilterdGas_T.columns[1]],
                 data = df3FilterdGas_T,
                 color = color_base)
 
-
+    ax.bar_label(ax.containers[0]);
+    
     plt.title(userValue + ' GAS Distribution');
     plt.xlabel('');
     plt.ylabel('Gas Volume (BSm3)')
@@ -546,82 +564,222 @@ if uniteType == 'STB':
 else:
     st.dataframe(dftt_newcSUM.tail(int(Numrows)))
 
+
+#--------------------------------------------------------------------------------------------------------------
+# description part
+dfINFO = pd.read_csv('https://factpages.npd.no/ReportServer_npdpublic?/FactPages/tableview/field_description&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false')
+dfINFO = dfINFO[['fldName','fldDescriptionHeading' ,'fldDescriptionText']]
+
+dfINFO1 = dfINFO.pivot(index='fldName', columns='fldDescriptionHeading', values='fldDescriptionText')
+dfINFO1.reset_index(inplace=True)
+
+d = dfINFO1[dfINFO1['fldName'] == userValue]
+d.drop(columns = ['Recovery strategy '], inplace=True)
+d.set_index(['fldName'],drop=True,inplace=True)
+
+# show table
+st.text('Description Data')
+st.dataframe(d)
+
+# creating 5 columns of text to show description
+with st.beta_expander('Click here to show full description',False):
+    col1,col2,col3,col4,col5 = st.beta_columns(5)
+    col1.markdown("<h1 style='text-align: center; font-size:20px;'>Development</h1>", unsafe_allow_html=True)
+    col1.success(str(d['Development '].values[0]))
+
+    col2.markdown("<h1 style='text-align: center; font-size:20px;'>Recovery</h1>", unsafe_allow_html=True)
+    col2.success(str(d['Recovery '].values[0]))
+
+    col3.markdown("<h1 style='text-align: center; font-size:20px;'>Reservoir</h1>", unsafe_allow_html=True)
+    col3.success(str(d['Reservoir '].values[0]))
+
+    col4.markdown("<h1 style='text-align: center; font-size:20px;'>Status</h1>", unsafe_allow_html=True)
+    col4.success(str(d['Status '].values[0]))
+
+    col5.markdown("<h1 style='text-align: center; font-size:20px;'>Transport</h1>", unsafe_allow_html=True)
+    col5.success(str(d['Transport '].values[0]))
+
+#--------------------------------------------------------------------------------------------------------------
 # Show wells table 
-#=================================================================================================================================
-df_Wellbore_development = df_Wellbore_development[['fldNpdidField','wlbWellboreName','wlbStatus','wlbPurpose','wlbContent']]
+#========================================================================================================================================
+with st.beta_expander("Click here to show HCs well's information",False):
 
-df_Wellbore_development.dropna(inplace=True)
+    wantedlst = ['fldName', 'wlbMainArea', 'wlbFormationWithHc1' ,   'wlbAgeWithHc1'   , 'wlbFormationWithHc2'   , 'wlbAgeWithHc2'  ,  'wlbFormationWithHc3'  ,  'wlbAgeWithHc3']
+    df_Wellbore_Exploration_All_and_Reserves = df_Wellbore_Exploration_All_and_Reserves[wantedlst]
+    df_Wellbore_Exploration_All_and_Reserves = df_Wellbore_Exploration_All_and_Reserves.set_index('fldName')
+    wlbMainAreaValues = list(df_Wellbore_Exploration_All_and_Reserves['wlbMainArea'].unique())
+    
+    # dropdown selecttion
+    fieldslst = list(df_Wellbore_Exploration_All_and_Reserves.index.unique())
+    selectedfield = st.selectbox('Select a Field to filtter with',fieldslst)
+    df_Wellbore_Exploration_All_and_Reserves = df_Wellbore_Exploration_All_and_Reserves[df_Wellbore_Exploration_All_and_Reserves.index == selectedfield]
 
-df_Wellbore_development['fldNpdidField'] = df_Wellbore_development['fldNpdidField'].astype(int)
+    st.text('Check wanted NCS segments')
+    option1 = st.checkbox(wlbMainAreaValues[0])
+    option2 = st.checkbox(wlbMainAreaValues[1])
+    option3 = st.checkbox(wlbMainAreaValues[2])
 
-df_Field_Reserves = df_Field_Reserves[['fldNpdidField','fldName']]
+    # remove white spaces at the end and begining of each entry (if any)
+    for column in wantedlst[2:]:
+        df_Wellbore_Exploration_All_and_Reserves[column] = df_Wellbore_Exploration_All_and_Reserves[column].str.lstrip()
+        df_Wellbore_Exploration_All_and_Reserves[column] = df_Wellbore_Exploration_All_and_Reserves[column].str.rstrip()
 
-df_wells = pd.merge(df_Wellbore_development,df_Field_Reserves, on='fldNpdidField')
+    df_Wellbore_Exploration_All_and_Reserves.replace('',np.nan,inplace = True)
 
-df_wells.drop(columns=['fldNpdidField'],inplace=True)
-# get the count wells df
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-dfWellsAllFields = df_wells.copy()
-#y wells
-dfYwellsAllFields = dfWellsAllFields[dfWellsAllFields['wlbWellboreName'].str.find('Y') !=-1]
-dfYwellsAllFields = dfYwellsAllFields.groupby('fldName')['wlbWellboreName'].count()
-dfYwellsAllFields = dfYwellsAllFields.reset_index()
-wells_dict = dfYwellsAllFields.set_index('fldName')['wlbWellboreName'].to_dict()
+    col1,col2,col3 = st.beta_columns(3)
 
-#producing well
-dfProdWellsAllFields = dfWellsAllFields[dfWellsAllFields['wlbStatus'] == 'PRODUCING']
-dfProdWellsAllFields = dfProdWellsAllFields.groupby('fldName')['wlbWellboreName'].count()
-dfProdWellsAllFields = dfProdWellsAllFields.reset_index()
-wellsProd_dict = dfProdWellsAllFields.set_index('fldName')['wlbWellboreName'].to_dict()
+    formations1 = list(df_Wellbore_Exploration_All_and_Reserves['wlbFormationWithHc1'].dropna().unique())
+    formations1Selected  = col1.multiselect('Select wanted formations 1',formations1)
+    if len(formations1Selected) >0:
+        df_Wellbore_Exploration_All_and_Reserves = df_Wellbore_Exploration_All_and_Reserves[df_Wellbore_Exploration_All_and_Reserves['wlbFormationWithHc1'].isin(formations1Selected)]
 
-# injecting well
-dfInjWellsAllFields = dfWellsAllFields[dfWellsAllFields['wlbStatus'] == 'INJECTING']
-dfInjWellsAllFields = dfInjWellsAllFields.groupby('fldName')['wlbWellboreName'].count()
-dfInjWellsAllFields = dfInjWellsAllFields.reset_index()
-wellsInj_dict = dfInjWellsAllFields.set_index('fldName')['wlbWellboreName'].to_dict()
+    formations2 = list(df_Wellbore_Exploration_All_and_Reserves['wlbFormationWithHc2'].dropna().unique())
+    formations2Selected  = col2.multiselect('Select wanted formations 2',formations2)
+    if len(formations2Selected) >0:
+        df_Wellbore_Exploration_All_and_Reserves = df_Wellbore_Exploration_All_and_Reserves[df_Wellbore_Exploration_All_and_Reserves['wlbFormationWithHc2'].isin(formations2Selected)]
+
+    formations3 = list(df_Wellbore_Exploration_All_and_Reserves['wlbFormationWithHc3'].dropna().unique())
+    formations3Selected  = col3.multiselect('Select wanted formations 3',formations3)
+    if len(formations3Selected) >0:
+        df_Wellbore_Exploration_All_and_Reserves = df_Wellbore_Exploration_All_and_Reserves[df_Wellbore_Exploration_All_and_Reserves['wlbFormationWithHc3'].isin(formations3Selected)]
 
 
-wellsCountDF = dfWellsAllFields.groupby('fldName')['wlbWellboreName'].count()
-wellsCountDF = wellsCountDF.reset_index()
-wellsCountDF['YwlbWellboreName'] = wellsCountDF['fldName'].map(wells_dict)
-wellsCountDF['wlProdbWellboreName'] = wellsCountDF['fldName'].map(wellsProd_dict)
-wellsCountDF['wlInjbWellboreName'] = wellsCountDF['fldName'].map(wellsInj_dict)
-wellsCountDF = wellsCountDF.fillna(0)
-wellsCountDF['YwlbWellboreName'] = wellsCountDF['YwlbWellboreName'].astype(int)
-wellsCountDF['wlProdbWellboreName'] = wellsCountDF['wlProdbWellboreName'].astype(int)
-wellsCountDF['wlInjbWellboreName'] = wellsCountDF['wlInjbWellboreName'].astype(int)
+    #filterdWells = df_Wellbore_Exploration_All_and_Reserves[df_Wellbore_Exploration_All_and_Reserves.index == userValue]
+    filterdWells = df_Wellbore_Exploration_All_and_Reserves.copy()
+    if option1 and not option2 and not option3:
+        filterdWells = filterdWells[filterdWells['wlbMainArea'].isin([wlbMainAreaValues[0]])]
+    if option2 and not option1 and not option3:
+        filterdWells = filterdWells[filterdWells['wlbMainArea'].isin([wlbMainAreaValues[1]])]
+    if option3 and not option2 and not option1:
+        filterdWells = filterdWells[filterdWells['wlbMainArea'].isin([wlbMainAreaValues[2]])]
+    
+    if option1 and option2 and not option3:
+        filterdWells = filterdWells[filterdWells['wlbMainArea'].isin([wlbMainAreaValues[0],wlbMainAreaValues[1]])]
+    if option1 and option3 and not option2:
+        filterdWells = filterdWells[filterdWells['wlbMainArea'].isin([wlbMainAreaValues[0],wlbMainAreaValues[2]])]
+    if option1 and option2 and option3:
+        filterdWells = filterdWells[filterdWells['wlbMainArea'].isin([wlbMainAreaValues[0],wlbMainAreaValues[1],wlbMainAreaValues[2]])]
 
-wellsCountDF = wellsCountDF.rename(columns={'wlbWellboreName':'well count','YwlbWellboreName':'well count y','wlProdbWellboreName':'well production','wlInjbWellboreName':'well injecting'})
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    if option2 and option3 and not option1:
+        filterdWells = filterdWells[filterdWells['wlbMainArea'].isin([wlbMainAreaValues[1],wlbMainAreaValues[2]])]
 
-df_wells = df_wells[df_wells['fldName'] == userValue].set_index(['fldName'])
+    filterdWells.replace(np.nan,'',inplace = True)
 
-st.text("Well's field information. The total number of wells:" + str(df_wells['wlbWellboreName'].nunique()))
-# Num of wells name that have Y in it
-df_wellsY = df_wells[df_wells['wlbWellboreName'].str.find('Y') !=-1]
-yCount = df_wellsY.shape[0]
-st.text("The total number of Y wells:" + str(yCount))
+    st.dataframe(filterdWells)
+    #=================================================================================================================================
+    df_Wellbore_development = df_Wellbore_development[['fldNpdidField','wlbWellboreName','wlbStatus','wlbPurpose','wlbContent']]
 
-# dropdown status selecttion
-stlst = df_wells['wlbStatus'].unique()
-stselc = st.selectbox('Select a status to filtter with',stlst) 
+    df_Wellbore_development.dropna(inplace=True)
 
-st.dataframe(df_wells[df_wells['wlbStatus'] == stselc])
-# save the well count df with the main well
-#--------------------------------------------------------------
-from pandas import ExcelWriter
-w = ExcelWriter('Wells.xlsx')
-dfWellsAllFields.to_excel(w, sheet_name='Sheet0',index=False)
-wellsCountDF.to_excel(w, sheet_name='Sheet1',index=False)
-w.save()
+    df_Wellbore_development['fldNpdidField'] = df_Wellbore_development['fldNpdidField'].astype(int)
 
-st.markdown(get_binary_file_downloader_html('Wells.xlsx', 'Well count and the main well data'), unsafe_allow_html=True)
-#--------------------------------------------------------------
+    df_Field_Reserves = df_Field_Reserves[['fldNpdidField','fldName']]
 
-fluidsListPR = df_wells[df_wells['wlbStatus'] == 'PRODUCING']['wlbContent'].value_counts().index.to_list()
-fluidsListING = df_wells[df_wells['wlbStatus'] == 'INJECTING']['wlbContent'].value_counts().index.to_list()
-# Show Status Hist
+    df_wells = pd.merge(df_Wellbore_development,df_Field_Reserves, on='fldNpdidField')
+
+    df_wells.drop(columns=['fldNpdidField'],inplace=True)
+    # get the count wells df
+    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 with st.beta_expander("Click here to show well's status histograms",False):
+    dfWellsAllFields = df_wells.copy()
+    # y wells
+    dfYwellsAllFields = dfWellsAllFields[dfWellsAllFields['wlbWellboreName'].str.find('Y') !=-1]
+    dfYwellsAllFields = dfYwellsAllFields.groupby('fldName')['wlbWellboreName'].count()
+    dfYwellsAllFields = dfYwellsAllFields.reset_index()
+    wells_dict = dfYwellsAllFields.set_index('fldName')['wlbWellboreName'].to_dict()
+
+    # producing well
+    dfProdWellsAllFields = dfWellsAllFields[dfWellsAllFields['wlbStatus'] == 'PRODUCING']
+    dfProdWellsAllFields = dfProdWellsAllFields.groupby('fldName')['wlbWellboreName'].count()
+    dfProdWellsAllFields = dfProdWellsAllFields.reset_index()
+    wellsProd_dict = dfProdWellsAllFields.set_index('fldName')['wlbWellboreName'].to_dict()
+
+    # injecting well
+    dfInjWellsAllFields = dfWellsAllFields[dfWellsAllFields['wlbStatus'] == 'INJECTING']
+    dfInjWellsAllFields = dfInjWellsAllFields.groupby('fldName')['wlbWellboreName'].count()
+    dfInjWellsAllFields = dfInjWellsAllFields.reset_index()
+    wellsInj_dict = dfInjWellsAllFields.set_index('fldName')['wlbWellboreName'].to_dict()
+
+    # producing oil
+    dfProdOILWellsAllFields = dfWellsAllFields[dfWellsAllFields['wlbStatus'] == 'PRODUCING']
+    dfProdOILWellsAllFields = dfProdOILWellsAllFields[dfProdOILWellsAllFields['wlbContent'] == 'OIL']
+    dfProdOILWellsAllFields = dfProdOILWellsAllFields.groupby('fldName')['wlbWellboreName'].count()
+    dfProdOILWellsAllFields = dfProdOILWellsAllFields.reset_index()
+    wellsProdOIL_dict = dfProdOILWellsAllFields.set_index('fldName')['wlbWellboreName'].to_dict()
+
+    # producing gas
+    dfProdGASWellsAllFields = dfWellsAllFields[dfWellsAllFields['wlbStatus'] == 'PRODUCING']
+    dfProdGASWellsAllFields = dfProdGASWellsAllFields[dfProdGASWellsAllFields['wlbContent'] == 'GAS']
+    dfProdGASWellsAllFields = dfProdGASWellsAllFields.groupby('fldName')['wlbWellboreName'].count()
+    dfProdGASWellsAllFields = dfProdGASWellsAllFields.reset_index()
+    wellsProdGAS_dict = dfProdGASWellsAllFields.set_index('fldName')['wlbWellboreName'].to_dict()
+
+    # injecting gas
+    dfInjGASWellsAllFields = dfWellsAllFields[dfWellsAllFields['wlbStatus'] == 'INJECTING']
+    dfInjGASWellsAllFields = dfInjGASWellsAllFields[dfInjGASWellsAllFields['wlbContent'] == 'GAS']
+    dfInjGASWellsAllFields = dfInjGASWellsAllFields.groupby('fldName')['wlbWellboreName'].count()
+    dfInjGASWellsAllFields = dfInjGASWellsAllFields.reset_index()
+    wellsInjGAS_dict = dfInjGASWellsAllFields.set_index('fldName')['wlbWellboreName'].to_dict()
+
+    # injecting water
+    dfInjWATERWellsAllFields = dfWellsAllFields[dfWellsAllFields['wlbStatus'] == 'INJECTING']
+    dfInjWATERWellsAllFields = dfInjWATERWellsAllFields[dfInjWATERWellsAllFields['wlbContent'] == 'WATER']
+    dfInjWATERWellsAllFields = dfInjWATERWellsAllFields.groupby('fldName')['wlbWellboreName'].count()
+    dfInjWATERWellsAllFields = dfInjWATERWellsAllFields.reset_index()
+    wellsInjWATER_dict = dfInjWATERWellsAllFields.set_index('fldName')['wlbWellboreName'].to_dict()
+
+
+    wellsCountDF = dfWellsAllFields.groupby('fldName')['wlbWellboreName'].count()
+    wellsCountDF = wellsCountDF.reset_index()
+    wellsCountDF['YwlbWellboreName'] = wellsCountDF['fldName'].map(wells_dict)
+    wellsCountDF['wlProdbWellboreName'] = wellsCountDF['fldName'].map(wellsProd_dict)
+    wellsCountDF['wlInjbWellboreName'] = wellsCountDF['fldName'].map(wellsInj_dict)
+    wellsCountDF['wlProdOILbWellboreName'] = wellsCountDF['fldName'].map(wellsProdOIL_dict)
+    wellsCountDF['wlProdGASbWellboreName'] = wellsCountDF['fldName'].map(wellsProdGAS_dict)
+    wellsCountDF['wlInjGASbWellboreName'] = wellsCountDF['fldName'].map(wellsInjGAS_dict)
+    wellsCountDF['wlInjWATERbWellboreName'] = wellsCountDF['fldName'].map(wellsInjWATER_dict)
+
+    wellsCountDF = wellsCountDF.fillna(0)
+    wellsCountDF['YwlbWellboreName'] = wellsCountDF['YwlbWellboreName'].astype(int)
+    wellsCountDF['wlProdbWellboreName'] = wellsCountDF['wlProdbWellboreName'].astype(int)
+    wellsCountDF['wlInjbWellboreName'] = wellsCountDF['wlInjbWellboreName'].astype(int)
+    wellsCountDF['wlProdOILbWellboreName'] = wellsCountDF['wlProdOILbWellboreName'].astype(int)
+    wellsCountDF['wlProdGASbWellboreName'] = wellsCountDF['wlProdGASbWellboreName'].astype(int)
+    wellsCountDF['wlInjGASbWellboreName'] = wellsCountDF['wlInjGASbWellboreName'].astype(int)
+    wellsCountDF['wlInjWATERbWellboreName'] = wellsCountDF['wlInjWATERbWellboreName'].astype(int)
+
+    wellsCountDF = wellsCountDF.rename(columns={'wlbWellboreName':'well count','YwlbWellboreName':'well count y','wlProdbWellboreName':'well production','wlInjbWellboreName':'well injecting',
+    'wlProdOILbWellboreName':'well producing oil','wlProdGASbWellboreName':'well producing gas','wlInjGASbWellboreName':'well injecting gas','wlInjWATERbWellboreName':'well injecting water'})
+    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    df_wells = df_wells[df_wells['fldName'] == userValue].set_index(['fldName'])
+
+    st.text("Well's field information. The total number of wells:" + str(df_wells['wlbWellboreName'].nunique()))
+    # Num of wells name that have Y in it
+    df_wellsY = df_wells[df_wells['wlbWellboreName'].str.find('Y') !=-1]
+    yCount = df_wellsY.shape[0]
+    st.text("The total number of Y wells:" + str(yCount))
+
+    # dropdown status selecttion
+    stlst = df_wells['wlbStatus'].unique()
+    stselc = st.selectbox('Select a status to filtter with',stlst) 
+
+    st.dataframe(df_wells[df_wells['wlbStatus'] == stselc])
+    # save the well count df with the main well
+    #--------------------------------------------------------------
+    from pandas import ExcelWriter
+    w = ExcelWriter('Wells.xlsx')
+    dfWellsAllFields.to_excel(w, sheet_name='Sheet0',index=False)
+    wellsCountDF.to_excel(w, sheet_name='Sheet1',index=False)
+    w.save()
+
+    st.markdown(get_binary_file_downloader_html('Wells.xlsx', 'Well count and the main well data'), unsafe_allow_html=True)
+    #--------------------------------------------------------------
+
+    fluidsListPR = df_wells[df_wells['wlbStatus'] == 'PRODUCING']['wlbContent'].value_counts().index.to_list()
+    fluidsListING = df_wells[df_wells['wlbStatus'] == 'INJECTING']['wlbContent'].value_counts().index.to_list()
+    # Show Status Hist
+#with st.beta_expander("Click here to show well's status histograms",False):
     col1,col2 = st.beta_columns(2)
     #get oil and gas series
     def getSeries(status,fluid):
@@ -748,42 +906,7 @@ with st.beta_expander("Click here to show well's status histograms",False):
             col2.pyplot()
     else:
         col1.text('No data in wlbContent for selected field')
-#--------------------------------------------------------------------------------------------------------------
-# description part
-dfINFO = pd.read_csv('https://factpages.npd.no/ReportServer_npdpublic?/FactPages/tableview/field_description&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false')
-dfINFO = dfINFO[['fldName','fldDescriptionHeading' ,'fldDescriptionText']]
-
-dfINFO1 = dfINFO.pivot(index='fldName', columns='fldDescriptionHeading', values='fldDescriptionText')
-dfINFO1.reset_index(inplace=True)
-
-d = dfINFO1[dfINFO1['fldName'] == userValue]
-d.drop(columns = ['Recovery strategy '], inplace=True)
-d.set_index(['fldName'],drop=True,inplace=True)
-
-# show table
-st.text('Description Data')
-st.dataframe(d)
-
-# creating 5 columns of text to show description
-with st.beta_expander('Click here to show full description',False):
-    col1,col2,col3,col4,col5 = st.beta_columns(5)
-    col1.markdown("<h1 style='text-align: center; font-size:20px;'>Development</h1>", unsafe_allow_html=True)
-    col1.success(str(d['Development '].values[0]))
-
-    col2.markdown("<h1 style='text-align: center; font-size:20px;'>Recovery</h1>", unsafe_allow_html=True)
-    col2.success(str(d['Recovery '].values[0]))
-
-    col3.markdown("<h1 style='text-align: center; font-size:20px;'>Reservoir</h1>", unsafe_allow_html=True)
-    col3.success(str(d['Reservoir '].values[0]))
-
-    col4.markdown("<h1 style='text-align: center; font-size:20px;'>Status</h1>", unsafe_allow_html=True)
-    col4.success(str(d['Status '].values[0]))
-
-    col5.markdown("<h1 style='text-align: center; font-size:20px;'>Transport</h1>", unsafe_allow_html=True)
-    col5.success(str(d['Transport '].values[0]))
-
-#--------------------------------------------------------------------------------------------------------------
-
+#=======================================================================================================================================================
 dfcum = df_newcSUM.copy()
 
 userValuescSum = userValues.copy()
