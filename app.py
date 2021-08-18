@@ -213,14 +213,14 @@ with st.beta_expander('Click to hide/show histograms',True):
     # Show the plot
     plt.show()
     plt.xticks(fontsize=10)
-    plt.savefig(final_directory + '/' + userValue + ' Oil Volumes.png')
+    plt.savefig(final_directory + '/' + userValue + ' Oil Volumes Histogram.png')
     col1.pyplot()
     
     # convert the columns to rows for the bar chart (GAS)
     df3FilterdGas_T = df3FilterdGas.T.reset_index()
 
     # selecting the color palette (blue)
-    color_base = sb.color_palette()[3]
+    color_base = sb.color_palette()[2]
 
     ax = sb.barplot(x = 'index',
                 y = df3FilterdGas_T[df3FilterdGas_T.columns[1]],
@@ -229,14 +229,14 @@ with st.beta_expander('Click to hide/show histograms',True):
 
     ax.bar_label(ax.containers[0]);
     
-    plt.title(userValue + ' Gil Volumes');
+    plt.title(userValue + ' Gas Volumes');
     plt.xlabel('');
     plt.ylabel('Gas Volume (BSm3)')
 
     # Show the plot
     plt.show()
     plt.xticks(fontsize=10)
-    plt.savefig(final_directory + '/' + userValue + ' Gas Volumes.png')
+    plt.savefig(final_directory + '/' + userValue + ' Gas Volumes Histogram.png')
     col2.pyplot()
 
 #==========================================================================================================================================================================
