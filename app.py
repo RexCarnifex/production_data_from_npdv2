@@ -194,7 +194,7 @@ df3FilterdOil_T = df3FilterdOil.T.reset_index()
 # selecting the color palette (blue)
 color_base = sb.color_palette()[0]
 
-with st.beta_expander('Click here to show histograms',True):
+with st.beta_expander('Click to hide histograms',True):
     col1,col2 = st.beta_columns(2)
 
     ax = sb.barplot(x = 'index',
@@ -203,7 +203,7 @@ with st.beta_expander('Click here to show histograms',True):
                 color=color_base)
     ax.bar_label(ax.containers[0]);
 
-    plt.title( userValue + ' OIL Volumes');
+    plt.title( userValue + ' Oil Volumes');
     plt.xlabel('');
     if uniteType == 'STB':
         plt.ylabel(' Oil Volume (STB)')
@@ -212,7 +212,7 @@ with st.beta_expander('Click here to show histograms',True):
 
     # Show the plot
     plt.show()
-    plt.savefig(final_directory + '/' + userValue + ' OIL Volumes.png')
+    plt.savefig(final_directory + '/' + userValue + ' Oil Volumes.png')
     col1.pyplot()
     
     # convert the columns to rows for the bar chart (GAS)
@@ -228,14 +228,14 @@ with st.beta_expander('Click here to show histograms',True):
 
     ax.bar_label(ax.containers[0]);
     
-    plt.title(userValue + ' GAS Volumes');
+    plt.title(userValue + ' Oil Volumes');
     plt.xlabel('');
     plt.ylabel('Gas Volume (BSm3)')
 
     # Show the plot
     plt.show()
     plt.xticks(fontsize=6)
-    plt.savefig(final_directory + '/' + userValue + ' GAS Volumes.png')
+    plt.savefig(final_directory + '/' + userValue + ' Gas Volumes.png')
     col2.pyplot()
 
 #==========================================================================================================================================================================
@@ -528,7 +528,7 @@ def plot_multi4(data,userValues, cols=None, spacing=.05, **kwargs):
     ax.legend(lines, labels, loc=0)
     return ax
 
-ans = st.radio('Would you like to indicate a time interval for ploting?',('No','Yes'))
+ans = st.radio('Select time interval for plotting?',('No','Yes'))
 if ans.lower() == 'yes':
     statrtTime = st.text_input("Enter a Start year: ", '1990')
     endTime = st.text_input("Enter an End year: ", '2022')
@@ -555,7 +555,7 @@ for i in range(len(userValues)-1):
     dftt_newcSUM[userValues[i] + ' Cumulative Production'] = dftt_newcSUM[userValues[i]].cumsum()
 
 # show table
-Numrows = st.text_input("Please select the number of months with recent production you would like to display", '5')
+Numrows = st.text_input("Select the number of last production data to display.", '5')
 st.text('Last ' + Numrows + ' rows of Filtered Data')
 if uniteType == 'STB':
     dftt_newcSUMoil = dftt_newcSUM.copy()
@@ -582,7 +582,7 @@ st.text('Description Data')
 st.dataframe(d)
 
 # creating 5 columns of text to show description
-with st.beta_expander('Click here to show full description',False):
+with st.beta_expander('Display NPD field description',False):
     col1,col2,col3,col4,col5 = st.beta_columns(5)
     col1.markdown("<h1 style='text-align: center; font-size:20px;'>Development</h1>", unsafe_allow_html=True)
     col1.success(str(d['Development '].values[0]))
@@ -602,7 +602,7 @@ with st.beta_expander('Click here to show full description',False):
 #--------------------------------------------------------------------------------------------------------------
 # Show wells table 
 #========================================================================================================================================
-with st.beta_expander("Click here to show HCs well's information",False):
+with st.beta_expander("Display wells's status and content histogram",False):
 
     wantedlst = ['fldName', 'wlbMainArea', 'wlbFormationWithHc1' ,   'wlbAgeWithHc1'   , 'wlbFormationWithHc2'   , 'wlbAgeWithHc2'  ,  'wlbFormationWithHc3'  ,  'wlbAgeWithHc3']
     df_Wellbore_Exploration_All_and_Reserves = df_Wellbore_Exploration_All_and_Reserves[wantedlst]
@@ -758,7 +758,7 @@ with st.beta_expander("Click here to show well's status histograms",False):
     # Num of wells name that have Y in it
     df_wellsY = df_wells[df_wells['wlbWellboreName'].str.find('Y') !=-1]
     yCount = df_wellsY.shape[0]
-    st.text("The total number of Y wells:" + str(yCount))
+    st.text("Number of wells planned as multilateral wellbores (Y):" + str(yCount))
 
     # dropdown status selecttion
     stlst = df_wells['wlbStatus'].unique()
@@ -793,9 +793,9 @@ with st.beta_expander("Click here to show well's status histograms",False):
         ax.bar_label(ax.containers[0]);
 
         plt.xticks(fontsize=4.3,rotation=0)
-        plt.ylabel('Frequency')
-        plt.title( userValue + ' Status Distribution');
-        plt.savefig(final_directory + '/' + userValue + " well's status histogram.png")
+        plt.ylabel('Number of Wells')
+        plt.title( userValue + ' Wellbore Status Histogram');
+        plt.savefig(final_directory + '/' + userValue + " Wellbore Status Histogram.png")
         col1.pyplot()
     else:
         col1.text('No data in wlbStatus for selected field')
@@ -805,9 +805,9 @@ with st.beta_expander("Click here to show well's status histograms",False):
         ax.bar_label(ax.containers[0]);
 
         plt.xticks(fontsize=5.5,rotation=0)
-        plt.ylabel('Frequency')
-        plt.title( userValue + ' Content Distribution');
-        plt.savefig(final_directory + '/' + userValue + " well's content histogram.png")
+        plt.ylabel('Number of Wells')
+        plt.title( userValue + ' Wellbore Content Histogram');
+        plt.savefig(final_directory + '/' + userValue + " Wellbore Content Histogram.png")
         col2.pyplot()
 
         #get oil, gas, water series (call the fun) and append the oil,gas,water 
@@ -860,10 +860,10 @@ with st.beta_expander("Click here to show well's status histograms",False):
             p.patches[GASIndex].set_color('red')
 
         plt.xticks(fontsize=4,rotation=0)
-        plt.ylabel('Frequency')
+        plt.ylabel('Number of Wells')
         plt.xlabel('')
-        plt.title( userValue + ' Status Distribution');
-        plt.savefig(final_directory + '/' + userValue + " well's status2 histogram.png")
+        plt.title( userValue + ' Wellbore Status Histogram');
+        plt.savefig(final_directory + '/' + userValue + " Wellbore Status Histogram2.png")
         st.pyplot()
 
         col1,col2 = st.beta_columns(2)
@@ -880,9 +880,9 @@ with st.beta_expander("Click here to show well's status histograms",False):
                 p.patches[GASIndex].set_color('red')
 
             plt.xticks(fontsize=5,rotation=0)
-            plt.ylabel('Frequency')
-            plt.title( userValue + ' PRODUCING Fluids Distribution');
-            plt.savefig(final_directory + '/' + userValue + " well's producing fluids histogram.png")
+            plt.ylabel('Number of Wells')
+            plt.title( userValue + ' Production Wells Histogram.');
+            plt.savefig(final_directory + '/' + userValue + " Production Wells Histogram..png")
             col1.pyplot()
 
         if df_wells[df_wells['wlbStatus'] == 'INJECTING']['wlbContent'].value_counts().shape[0] >0:
@@ -900,9 +900,9 @@ with st.beta_expander("Click here to show well's status histograms",False):
                 p.patches[OILIndex].set_color('green')
             
             plt.xticks(fontsize=5,rotation=0)
-            plt.ylabel('Frequency')
-            plt.title( userValue + ' INJECTING Fluids Distribution');
-            plt.savefig(final_directory + '/' + userValue + " well's injecting fluids histogram.png")
+            plt.ylabel('Number of Wells')
+            plt.title( userValue + ' Injection Wells Histogram.');
+            plt.savefig(final_directory + '/' + userValue + " Production Wells Histogram..png")
             col2.pyplot()
     else:
         col1.text('No data in wlbContent for selected field')
