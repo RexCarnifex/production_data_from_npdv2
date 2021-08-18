@@ -191,8 +191,8 @@ if uniteType == 'STB':
 # convert the columns to rows for the bar chart (OIL)
 df3FilterdOil_T = df3FilterdOil.T.reset_index()
 
-# selecting the color palette (blue)
-color_base = sb.color_palette()[0]
+# selecting the color palette (green)
+color_base = sb.color_palette()[2]
 
 with st.beta_expander('Click to hide/show histograms',True):
     col1,col2 = st.beta_columns(2)
@@ -220,7 +220,7 @@ with st.beta_expander('Click to hide/show histograms',True):
     df3FilterdGas_T = df3FilterdGas.T.reset_index()
 
     # selecting the color palette (blue)
-    color_base = sb.color_palette()[2]
+    color_base = sb.color_palette()[3]
 
     ax = sb.barplot(x = 'index',
                 y = df3FilterdGas_T[df3FilterdGas_T.columns[1]],
