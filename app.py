@@ -67,7 +67,7 @@ df,dft,lst,df1Hist,df2Hist,df_Wellbore_development,df_Field_Reserves,df_Wellbore
 
 #=================================================== Multiple oil ==================================
 # Multiselect
-lstOil  = st.multiselect('For Multiple oil graph select the fields to plot with',lst,['EKOFISK','STATFJORD','TROLL'])
+lstOil  = st.multiselect('Select fields for first production',lst,['EKOFISK','STATFJORD','TROLL'])
 
 dfMultOil = df.copy()
 # change prfInformationCarrier column name
@@ -93,7 +93,7 @@ df_Wellbore_Exploration_All_and_Reserves = pd.merge(df_new, df_Field_Reserves, h
 df_Wellbore_Exploration_All_and_Reserves.drop(['fldRecoverableOil','fldRecoverableGas','fldRecoverableNGL','fldRecoverableCondensate','fldRecoverableOE','fldRemainingOil','fldRemainingGas','fldRemainingNGL','fldRemainingCondensate','fldRemainingOE','fldDateOffResEstDisplay','DatesyncNPD'], axis=1, inplace=True)
 #===================================================================================================
 # dropdown selecttion
-selection = st.selectbox('Select a Field to filtter with',lst) 
+selection = st.selectbox('Select a field for detailed production analysis',lst) 
 userValue = selection
 
 df_new = df[df['prfInformationCarrier'] == userValue]
@@ -107,12 +107,12 @@ Columns = {'OIL':'prfPrdOilGrossMillSm3', 'GAS': 'prfPrdGasGrossBillSm3','CONDEN
            'OE': 'prfPrdOeGrossMillSm3', 'WATER': 'prfPrdProducedWaterInFieldMillSm3' }
 
 # dropdown Unite selecttion
-uniteType = st.selectbox('Select a unite for oil production',['Sm3','STB']) 
+uniteType = st.selectbox('Select oil production unit',['Sm3','STB']) 
 
 # Change Unite to STB
 #if uniteType == "STB":
-#    df_new['OIL'] = df_new['OIL']/0.159
-#    dft_new['OIL'] = dft_new['OIL']/0.159
+#    df_new['OIL'] = df_new['OIL']*6.2898
+#    dft_new['OIL'] = dft_new['OIL']*6.2898
 
 columnNames = list(Columns.keys())
 
@@ -179,8 +179,8 @@ dfHist = dfHist[['fldName_x','fldInplaceOil', 'fldRecoverableOil', 'fldRemaining
 df3Filtered = dfHist[dfHist['fldName_x'] == userValue]
 
 # rename columns
-df3Filtered = df3Filtered.rename(columns={'fldInplaceOil':'In place Oil','fldRecoverableOil':'Recoverable Oil','fldRemainingOil':'Remaining Oil',
-                   'fldRecoverableGas':'Recoverable Gas','fldRemainingGas':'Remaining Gas','fldInplaceAssGas':'Gas in place Ass','fldInplaceFreeGas':'In Place Free Gas'})
+df3Filtered = df3Filtered.rename(columns={'fldInplaceOil':'OIIP','fldRecoverableOil':'EUR_oil','fldRemainingOil':'NPD TRR_oil',
+                   'fldRecoverableGas':'EUR_gas','fldRemainingGas':'NPD TRR_gas','fldInplaceAssGas':'GIIP_ass','fldInplaceFreeGas':'GIIP_free'})
 
 # split the filterd dataframe into two dataframes one for oil and for gas
 df3FilterdOil = df3Filtered[['In place Oil','Recoverable Oil','Remaining Oil']]
@@ -203,7 +203,7 @@ with st.beta_expander('Click here to show histograms',True):
                 color=color_base)
     ax.bar_label(ax.containers[0]);
 
-    plt.title( userValue + ' OIL Distribution');
+    plt.title( userValue + ' OIL Volumes');
     plt.xlabel('');
     if uniteType == 'STB':
         plt.ylabel(' Oil Volume (STB)')
@@ -212,7 +212,7 @@ with st.beta_expander('Click here to show histograms',True):
 
     # Show the plot
     plt.show()
-    plt.savefig(final_directory + '/' + userValue + ' OIL Distribution.png')
+    plt.savefig(final_directory + '/' + userValue + ' OIL Volumes.png')
     col1.pyplot()
     
     # convert the columns to rows for the bar chart (GAS)
@@ -228,14 +228,14 @@ with st.beta_expander('Click here to show histograms',True):
 
     ax.bar_label(ax.containers[0]);
     
-    plt.title(userValue + ' GAS Distribution');
+    plt.title(userValue + ' GAS Volumes');
     plt.xlabel('');
     plt.ylabel('Gas Volume (BSm3)')
 
     # Show the plot
     plt.show()
     plt.xticks(fontsize=6)
-    plt.savefig(final_directory + '/' + userValue + ' GAS Distribution.png')
+    plt.savefig(final_directory + '/' + userValue + ' GAS Volumes.png')
     col2.pyplot()
 
 #==========================================================================================================================================================================
