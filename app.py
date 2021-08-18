@@ -194,7 +194,7 @@ df3FilterdOil_T = df3FilterdOil.T.reset_index()
 # selecting the color palette (green)
 color_base = sb.color_palette()[2]
 
-with st.beta_expander('Click to hide/show histograms',True):
+with st.beta_expander('Display/hide histograms',True):
     col1,col2 = st.beta_columns(2)
 
     ax = sb.barplot(x = 'index',
@@ -213,7 +213,7 @@ with st.beta_expander('Click to hide/show histograms',True):
     # Show the plot
     plt.show()
     plt.xticks(fontsize=10)
-    plt.savefig(final_directory + '/' + userValue + ' Oil Volumes Histogram.png')
+    plt.savefig(final_directory + '/' + userValue + ' Oil Volumes.png')
     col1.pyplot()
     
     # convert the columns to rows for the bar chart (GAS)
@@ -236,7 +236,7 @@ with st.beta_expander('Click to hide/show histograms',True):
     # Show the plot
     plt.show()
     plt.xticks(fontsize=10)
-    plt.savefig(final_directory + '/' + userValue + ' Gas Volumes Histogram.png')
+    plt.savefig(final_directory + '/' + userValue + ' Gas Volumes.png')
     col2.pyplot()
 
 #==========================================================================================================================================================================
@@ -583,7 +583,7 @@ st.text('Description Data')
 st.dataframe(d)
 
 # creating 5 columns of text to show description
-with st.beta_expander('Display NPD field description',False):
+with st.beta_expander('Display/hide NPD field description',False):
     col1,col2,col3,col4,col5 = st.beta_columns(5)
     col1.markdown("<h1 style='text-align: center; font-size:20px;'>Development</h1>", unsafe_allow_html=True)
     col1.success(str(d['Development '].values[0]))
@@ -603,7 +603,7 @@ with st.beta_expander('Display NPD field description',False):
 #--------------------------------------------------------------------------------------------------------------
 # Show wells table 
 #========================================================================================================================================
-with st.beta_expander("Display wells's status and content histogram",False):
+with st.beta_expander("Display/hide wells's status and content histogram",False):
 
     wantedlst = ['fldName', 'wlbMainArea', 'wlbFormationWithHc1' ,   'wlbAgeWithHc1'   , 'wlbFormationWithHc2'   , 'wlbAgeWithHc2'  ,  'wlbFormationWithHc3'  ,  'wlbAgeWithHc3']
     df_Wellbore_Exploration_All_and_Reserves = df_Wellbore_Exploration_All_and_Reserves[wantedlst]
@@ -681,7 +681,7 @@ with st.beta_expander("Display wells's status and content histogram",False):
     df_wells.drop(columns=['fldNpdidField'],inplace=True)
     # get the count wells df
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-with st.beta_expander("Click here to show well's status histograms",False):
+with st.beta_expander("Display well's status histograms",False):
     dfWellsAllFields = df_wells.copy()
     # y wells
     dfYwellsAllFields = dfWellsAllFields[dfWellsAllFields['wlbWellboreName'].str.find('Y') !=-1]
@@ -795,7 +795,7 @@ with st.beta_expander("Click here to show well's status histograms",False):
 
         plt.xticks(fontsize=4.3,rotation=0)
         plt.ylabel('Number of Wells')
-        plt.title( userValue + ' Wellbore Status Histogram');
+        plt.title( userValue + ' Wellbore Status');
         plt.savefig(final_directory + '/' + userValue + " Wellbore Status Histogram.png")
         col1.pyplot()
     else:
@@ -807,7 +807,7 @@ with st.beta_expander("Click here to show well's status histograms",False):
 
         plt.xticks(fontsize=5.5,rotation=0)
         plt.ylabel('Number of Wells')
-        plt.title( userValue + ' Wellbore Content Histogram');
+        plt.title( userValue + ' Wellbore Content');
         plt.savefig(final_directory + '/' + userValue + " Wellbore Content Histogram.png")
         col2.pyplot()
 
@@ -863,7 +863,7 @@ with st.beta_expander("Click here to show well's status histograms",False):
         plt.xticks(fontsize=4,rotation=0)
         plt.ylabel('Number of Wells')
         plt.xlabel('')
-        plt.title( userValue + ' Wellbore Status Histogram');
+        plt.title( userValue + ' Wellbore Status');
         plt.savefig(final_directory + '/' + userValue + " Wellbore Status Histogram2.png")
         st.pyplot()
 
@@ -882,8 +882,8 @@ with st.beta_expander("Click here to show well's status histograms",False):
 
             plt.xticks(fontsize=5,rotation=0)
             plt.ylabel('Number of Wells')
-            plt.title( userValue + ' Production Wells Histogram.');
-            plt.savefig(final_directory + '/' + userValue + " Production Wells Histogram..png")
+            plt.title( userValue + ' Production Wells');
+            plt.savefig(final_directory + '/' + userValue + " Production Wells Histogram.png")
             col1.pyplot()
 
         if df_wells[df_wells['wlbStatus'] == 'INJECTING']['wlbContent'].value_counts().shape[0] >0:
@@ -902,8 +902,8 @@ with st.beta_expander("Click here to show well's status histograms",False):
             
             plt.xticks(fontsize=5,rotation=0)
             plt.ylabel('Number of Wells')
-            plt.title( userValue + ' Injection Wells Histogram.');
-            plt.savefig(final_directory + '/' + userValue + " Production Wells Histogram..png")
+            plt.title( userValue + ' Injection Wells');
+            plt.savefig(final_directory + '/' + userValue + " Production Wells Histogram.png")
             col2.pyplot()
     else:
         col1.text('No data in wlbContent for selected field')
