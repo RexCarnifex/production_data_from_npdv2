@@ -212,7 +212,7 @@ with st.beta_expander('Click to hide/show histograms',True):
 
     # Show the plot
     plt.show()
-    plt.xticks(fontsize=8)
+    plt.xticks(fontsize=10)
     plt.savefig(final_directory + '/' + userValue + ' Oil Volumes.png')
     col1.pyplot()
     
