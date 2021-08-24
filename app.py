@@ -107,12 +107,8 @@ Columns = {'OIL':'prfPrdOilGrossMillSm3', 'GAS': 'prfPrdGasGrossBillSm3','CONDEN
            'OE': 'prfPrdOeGrossMillSm3', 'WATER': 'prfPrdProducedWaterInFieldMillSm3' }
 
 # dropdown Unite selecttion
-uniteType = st.selectbox('Select oil production unit',['Sm3','STB']) 
+uniteType_Oil = st.selectbox('Select oil production unit',['Sm3','STB']) 
 
-# Change Unite to STB
-#if uniteType == "STB":
-#    df_new['OIL'] = df_new['OIL']*6.2898
-#    dft_new['OIL'] = dft_new['OIL']*6.2898
 
 columnNames = list(Columns.keys())
 
@@ -186,7 +182,7 @@ df3Filtered = df3Filtered.rename(columns={'fldInplaceOil':'OIIP','fldRecoverable
 df3FilterdOil = df3Filtered[['OIIP','EUR_oil','NPD TRR_oil']]
 df3FilterdGas = df3Filtered[['GIIP_free','GIIP_ass','EUR_gas','NPD TRR_gas']]
 
-if uniteType == 'STB':
+if uniteType_Oil == 'STB':
     df3FilterdOil = df3FilterdOil*6.2898
 # convert the columns to rows for the bar chart (OIL)
 df3FilterdOil_T = df3FilterdOil.T.reset_index()
@@ -205,7 +201,7 @@ with st.beta_expander('Display/hide histograms',True):
 
     plt.title( userValue + ' Oil Volumes');
     plt.xlabel('');
-    if uniteType == 'STB':
+    if uniteType_Oil == 'STB':
         plt.ylabel(' Oil Volume (STB)')
     else:
         plt.ylabel(' Oil Volume (MSm3)')
@@ -389,7 +385,7 @@ def plot_multi3(data,userValues,xtime, cols=None, spacing=.05, **kwargs):
     elif (cols[0] == 'GAS Cumulative'):
         ax.set_ylabel(ylabel=cols[0]+ ' Production (BSm3)')
     elif (cols[0] == 'OIL Cumulative'):
-        if uniteType == 'STB':
+        if uniteType_Oil == 'STB':
             ax.set_ylabel(ylabel=cols[0]+ ' Production (STB)')
         else:
             ax.set_ylabel(ylabel=cols[0]+ ' Production (MSm3)')
@@ -418,7 +414,7 @@ def plot_multi3(data,userValues,xtime, cols=None, spacing=.05, **kwargs):
         elif (cols[n] == 'GAS Cumulative'):
             ax_new.set_ylabel(ylabel=cols[n]+ ' Production (BSm3)')
         elif (cols[n] == 'OIL Cumulative'):
-            if uniteType == 'STB':
+            if uniteType_Oil == 'STB':
                 ax.set_ylabel(ylabel=cols[n]+ ' Production (STB)')
             else:
                 ax.set_ylabel(ylabel=cols[n]+ ' Production (MSm3)')
@@ -558,7 +554,7 @@ for i in range(len(userValues)-1):
 # show table
 Numrows = st.text_input("Display the last months of production data.", '5')
 st.text('Last ' + Numrows + ' rows of Filtered Data')
-if uniteType == 'STB':
+if uniteType_Oil == 'STB':
     dftt_newcSUMoil = dftt_newcSUM.copy()
     dftt_newcSUMoil[['OIL','OIL Cumulative Production']] = dftt_newcSUMoil[['OIL','OIL Cumulative Production']]*6.2898
     st.dataframe(dftt_newcSUMoil.tail(int(Numrows)))
@@ -1029,7 +1025,7 @@ if st.button('Plot Group Graphs'):
     st.header('Group Graphs')
     #=====================================MultiOil=======================================================
     if ('OIL' in userValues):
-        if uniteType == 'STB':
+        if uniteType_Oil == 'STB':
             dfMultOil = dfMultOil*6.2898
 
         years = mdates.YearLocator()   # every year
@@ -1047,7 +1043,7 @@ if st.button('Plot Group Graphs'):
             plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
         plt.title('Oil Production');
         plt.xlabel('Years');
-        if uniteType == 'STB':
+        if uniteType_Oil == 'STB':
             plt.ylabel('Production Rate (STB/Month)');
         else:
             plt.ylabel('Production Rate (MSm3/Month)');
@@ -1082,7 +1078,7 @@ if st.button('Plot Group Graphs'):
 
         plt.title('Oil Production');
         #plt.xlabel('Time');
-        if uniteType == 'STB':
+        if uniteType_Oil == 'STB':
             plt.ylabel('Production Rate (STB/Month)');
         else:
             plt.ylabel('Production Rate (MSm3/Month)');
@@ -1271,7 +1267,7 @@ if (answer == 'individual' or answer =='both' or len(graphNum) ==1):
     lstdf = []
     for i in range(len(userValues)-1):
         dfcSum = df_new.copy()
-        if ('OIL' in  userValues) & (uniteType =='STB'):
+        if ('OIL' in  userValues) & (uniteType_Oil =='STB'):
             dfcSum['OIL'] = dfcSum['OIL']*6.2898
         dfcSum = dfcSum[[userValues[-1],userValues[i]]]
         dfcSum.set_index('Years', inplace=True)
