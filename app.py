@@ -205,7 +205,7 @@ with st.beta_expander('Display/hide histograms',True):
     plt.title( userValue + ' Oil Volumes');
     plt.xlabel('');
     if uniteType_Oil == 'STB':
-        plt.ylabel(' Oil Volume (STB)')
+        plt.ylabel(' Oil Volume (MSTB)')
     else:
         plt.ylabel(' Oil Volume (MSm3)')
 
@@ -234,7 +234,7 @@ with st.beta_expander('Display/hide histograms',True):
     plt.title(userValue + ' Gas Volumes');
     plt.xlabel('');
     if uniteType_Gas == 'ft3':
-        plt.ylabel(' Gas Volume (ft3)')
+        plt.ylabel(' Gas Volume (Bft3)')
     else:
         plt.ylabel(' Gas Volume (BSm3)')
 
