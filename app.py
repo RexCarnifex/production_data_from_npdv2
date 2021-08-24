@@ -187,7 +187,7 @@ df3FilterdOil = df3Filtered[['OIIP','EUR_oil','NPD TRR_oil']]
 df3FilterdGas = df3Filtered[['GIIP_free','GIIP_ass','EUR_gas','NPD TRR_gas']]
 
 if uniteType == 'STB':
-    df3FilterdOil = df3FilterdOil/0.159
+    df3FilterdOil = df3FilterdOil*6.2898
 # convert the columns to rows for the bar chart (OIL)
 df3FilterdOil_T = df3FilterdOil.T.reset_index()
 
@@ -560,7 +560,7 @@ Numrows = st.text_input("Display the last months of production data.", '5')
 st.text('Last ' + Numrows + ' rows of Filtered Data')
 if uniteType == 'STB':
     dftt_newcSUMoil = dftt_newcSUM.copy()
-    dftt_newcSUMoil[['OIL','OIL Cumulative Production']] = dftt_newcSUMoil[['OIL','OIL Cumulative Production']]/0.159
+    dftt_newcSUMoil[['OIL','OIL Cumulative Production']] = dftt_newcSUMoil[['OIL','OIL Cumulative Production']]*6.2898
     st.dataframe(dftt_newcSUMoil.tail(int(Numrows)))
 else:
     st.dataframe(dftt_newcSUM.tail(int(Numrows)))
@@ -1030,7 +1030,7 @@ if st.button('Plot Group Graphs'):
     #=====================================MultiOil=======================================================
     if ('OIL' in userValues):
         if uniteType == 'STB':
-            dfMultOil = dfMultOil/0.159
+            dfMultOil = dfMultOil*6.2898
 
         years = mdates.YearLocator()   # every year
         months = mdates.MonthLocator()  # every month
@@ -1272,7 +1272,7 @@ if (answer == 'individual' or answer =='both' or len(graphNum) ==1):
     for i in range(len(userValues)-1):
         dfcSum = df_new.copy()
         if ('OIL' in  userValues) & (uniteType =='STB'):
-            dfcSum['OIL'] = dfcSum['OIL']/0.159
+            dfcSum['OIL'] = dfcSum['OIL']*6.2898
         dfcSum = dfcSum[[userValues[-1],userValues[i]]]
         dfcSum.set_index('Years', inplace=True)
         dfcSum[userValues[i] + ' Cumulative'] = dfcSum[userValues[i]].cumsum()    
