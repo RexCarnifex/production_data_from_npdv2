@@ -106,8 +106,11 @@ dft_new.rename(columns={'prfPrdOilGrossMillSm3': 'OIL', 'prfPrdGasGrossBillSm3':
 Columns = {'OIL':'prfPrdOilGrossMillSm3', 'GAS': 'prfPrdGasGrossBillSm3','CONDENSATE': 'prfPrdCondensateGrossMillSm3',
            'OE': 'prfPrdOeGrossMillSm3', 'WATER': 'prfPrdProducedWaterInFieldMillSm3' }
 
-# dropdown Unite selecttion
+# dropdown Unite selection for Oil unit
 uniteType_Oil = st.selectbox('Select oil production unit',['Sm3','STB']) 
+
+# dropdown Unite selection for Gas unit
+uniteType_Gas = st.selectbox('Select gas production unit',['Sm3','ft3'])
 
 
 columnNames = list(Columns.keys())
