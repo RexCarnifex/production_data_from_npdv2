@@ -556,7 +556,7 @@ for i in range(len(userValues)-1):
     dftt_newcSUM[userValues[i] + ' Cumulative Production'] = dftt_newcSUM[userValues[i]].cumsum()
 
 # show table
-Numrows = st.text_input("Select the number of last production data to display.", '5')
+Numrows = st.text_input("Display the last months of production data.", '5')
 st.text('Last ' + Numrows + ' rows of Filtered Data')
 if uniteType == 'STB':
     dftt_newcSUMoil = dftt_newcSUM.copy()
