@@ -215,6 +215,9 @@ with st.beta_expander('Display/hide histograms',True):
     plt.savefig(final_directory + '/' + userValue + ' Oil Volumes.png')
     col1.pyplot()
     
+
+    if uniteType_Gas == 'ft3':
+        df3FilterdGas = df3FilterdGas*35.315
     # convert the columns to rows for the bar chart (GAS)
     df3FilterdGas_T = df3FilterdGas.T.reset_index()
 
@@ -230,7 +233,10 @@ with st.beta_expander('Display/hide histograms',True):
     
     plt.title(userValue + ' Gas Volumes');
     plt.xlabel('');
-    plt.ylabel('Gas Volume (BSm3)')
+    if uniteType_Gas == 'ft3':
+        plt.ylabel(' Gas Volume (ft3)')
+    else:
+        plt.ylabel(' Gas Volume (BSm3)')
 
     # Show the plot
     plt.show()
