@@ -392,10 +392,13 @@ def plot_multi3(data,userValues,xtime, cols=None, spacing=.05, **kwargs):
     if (cols[0] == 'GAS'):
         ax.set_ylabel(ylabel=cols[0]+ ' Production Rate (BSm3/Month)')
     elif (cols[0] == 'GAS Cumulative'):
-        ax.set_ylabel(ylabel=cols[0]+ ' Production (BSm3)')
+        if uniteType_Gas == 'ft3':
+            ax.set_ylabel(ylabel=cols[0]+ ' Production (Mft3)')
+        else:
+            ax.set_ylabel(ylabel=cols[0]+ ' Production (BSm3)')
     elif (cols[0] == 'OIL Cumulative'):
         if uniteType_Oil == 'STB':
-            ax.set_ylabel(ylabel=cols[0]+ ' Production (STB)')
+            ax.set_ylabel(ylabel=cols[0]+ ' Production (MSTB)')
         else:
             ax.set_ylabel(ylabel=cols[0]+ ' Production (MSm3)')
     elif (cols[0] == 'WATER Cumulative'):
