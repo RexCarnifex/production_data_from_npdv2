@@ -1,5 +1,4 @@
 import pandas as pd
-pd.options.mode.chained_assignment = None  # default='warn'
 import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
@@ -205,7 +204,7 @@ class wells:
     def plot_multi_oil(self,filterdWells,dfMultOil,uniteType_Oil,final_directory):
         filtered_fields = list(filterdWells['fldName'].unique())
         choosen_filtered_fields = st.multiselect('Select wanted fields for plotting', filtered_fields,filtered_fields)
-        
+
         if len(choosen_filtered_fields) > 1:
             dfMultOil = dfMultOil[dfMultOil['Field'].isin(choosen_filtered_fields)]
         elif len(choosen_filtered_fields) == 1:
@@ -284,3 +283,4 @@ class wells:
                 ax.grid(axis='both', which='both')
                 plt.savefig(final_directory + '/' + ' multiple fields oil rate month.png')
                 st.pyplot()
+        return choosen_filtered_fields
