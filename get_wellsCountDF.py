@@ -8,38 +8,84 @@ from matplotlib.ticker import FixedLocator
 
 
 class wells:
+    
+    """
+            This function counts the number of cells with specific categories.
+
+            wlbPurpose - main category
+
+            wlbStatus - main category
+
+            Parameters:
+            --------------
+            Dataframe - df_Wellbore_development (imported from NPD when the application is started)
+            - Field names
+            - welbore status
+            - wellbore names
+            - wellbore purpose
+            - wellbore content
+            - wellbore name category 5 (used to count multilateral wells)
+
+            Returns:
+            --------------
+            Dataframe:
+            df_wells - 
+            wellsCountDF - 
+
+            example data:
+            - injection wells
+            - production wells
+            - number of multilateral wells
+            - and more
+
+            """
 
     def get_wellsCountDF(self,df_Wellbore_development,df_Field_Reserves):
+        
+        # drop columns except ['fldNpdidField','wlbWellboreName','wlbStatus','wlbPurpose','wlbContent','wlbNamePart5']
         df_Wellbore_development = df_Wellbore_development[['fldNpdidField','wlbWellboreName','wlbStatus','wlbPurpose','wlbContent','wlbNamePart5']]
 
         #df_Wellbore_development.dropna(inplace=True)
+        # drop nan values in the id column for mergeing with df_Field_Reserves (otherwise error will occure)
         df_Wellbore_development = df_Wellbore_development[df_Wellbore_development['fldNpdidField'].notna()]
 
+        # convert the id column type to int
         df_Wellbore_development['fldNpdidField'] = df_Wellbore_development['fldNpdidField'].astype(int)
 
+        # drop columns except  ['fldNpdidField','fldName']
         df_Field_Reserves = df_Field_Reserves[['fldNpdidField','fldName']]
-        ## TODO Change merge to join and inspecting
-        #df_wells = pd.merge(df_Wellbore_development,df_Field_Reserves, on='fldNpdidField')
+    
+        # mergeing df_Wellbore_development with df_Field_Reserves (df_wells)
         df_wells = df_Field_Reserves.join(df_Wellbore_development.set_index('fldNpdidField'),on='fldNpdidField', how='left')
         different = list(set(list(df_Wellbore_development['fldNpdidField'].unique())) - set(list(df_Field_Reserves['fldNpdidField'].unique())))
         df_wells = df_wells.append(df_Wellbore_development[df_Wellbore_development['fldNpdidField'].isin(different)],ignore_index=True)
         dfWellsAllFields = df_wells.copy()
 
-        dfWellsAllFields.head()
+        #dfWellsAllFields.head()
 
         # Y wells multilateral in ['wlbNamePart5'])
+        # drop nan values in wlbNamePart5 column to get consistant count of y wells
+        # but that won't affect the dfWellsAllFields because we are saving the dropped nan dataframe in a new one (pureY_df)
         pureY_df = dfWellsAllFields[dfWellsAllFields['wlbNamePart5'].notna()]
+        # filter the dataframe with rows that only have Y in them
         pureY_df = pureY_df[pureY_df['wlbNamePart5'].str.find('Y') != -1]
+        # get the count of Ys in each field in a new df (dfYwellsAllFields)
         dfYwellsAllFields = pureY_df.groupby('fldNpdidField')['wlbNamePart5'].count()
+        # making the id and the y count as columns for later merging by reseting the index
         dfYwellsAllFields = dfYwellsAllFields.reset_index()
+        # covert the pervious dataframe to a dictionary for later merging
         wells_dict = dfYwellsAllFields.set_index('fldNpdidField')['wlbNamePart5'].to_dict()
-
+        
         #wells_dict
 
         # PRODUCTION well # Purpose
+        # filter  wlbPurpose with value PRODUCTION
         dfProd_PurposeWellsAllFields = dfWellsAllFields[dfWellsAllFields['wlbPurpose'] == 'PRODUCTION']
+        # get the count of PRODUCTIONs for each field
         dfProd_PurposeWellsAllFields = dfProd_PurposeWellsAllFields.groupby('fldNpdidField')['wlbWellboreName'].count()
+        # making the id and the PRODUCTIONs count as columns for later merging by reseting the index
         dfProd_PurposeWellsAllFields = dfProd_PurposeWellsAllFields.reset_index()
+        # covert the pervious dataframe to a dictionary for later merging
         wellsProd_dict_Purpose = dfProd_PurposeWellsAllFields.set_index('fldNpdidField')['wlbWellboreName'].to_dict()
 
         #wellsProd_dict_Purpose
@@ -138,15 +184,23 @@ class wells:
 
         #wellsInjWATERANDGAS_dict
 
+        # get all unique fields id and there names from dfWellsAllFields and save them to wellsCountDF
+        # which is the df that will be used to merge above counts to
         wellsCountDF = dfWellsAllFields.groupby('fldNpdidField')['wlbWellboreName'].count()
         wellsCountDF = wellsCountDF.reset_index()
 
 
-        # NEW WELL COUNT SUM
+        # "groupby". This function ensure that the well count is done for all field names
         wellsCountDF['WellCumSum'] = dfWellsAllFields.groupby('fldNpdidField')['wlbWellboreName'].count()
 
-
+        #  The high order (.map function) accepts another function and a sequence of "iterables" as parameters...
+        #  Return another function.
+        # adding Y wells count from wells_dict (which contains the count of Y wells for each field) to wellsCountDF
+        # wellsCountDF have field id column, wells_dict also has the field ids
+        # so Y wells count will be mapped to wellsCountDF['YwlbWellboreName'] based on the field ids which both have in common
+        # it's like merging
         wellsCountDF['YwlbWellboreName'] = wellsCountDF['fldNpdidField'].map(wells_dict)
+        # same for others
         wellsCountDF['wlProdPurposebWellboreName'] = wellsCountDF['fldNpdidField'].map(wellsProd_dict_Purpose)
         wellsCountDF['wlbInjPurposeWellboreName'] = wellsCountDF['fldNpdidField'].map(wellsInj_dict_Purpose)
         wellsCountDF['wlProdOILbWellboreName'] = wellsCountDF['fldNpdidField'].map(wellsProdOIL_dict)
@@ -165,8 +219,14 @@ class wells:
         wellsCountDF['wlProdStatusbWellboreName'] = wellsCountDF['fldNpdidField'].map(wellsProd_dict_Status)
         wellsCountDF['wlbInjStatusWellboreName'] = wellsCountDF['fldNpdidField'].map(wellsInj_dict_Status)
 
-
+        # for NA and NaN values zero will be filled in the df
+        # wellsCountDF before maping above counts to it, it had all field ids and names, it didn't had any nan values
+        # when mapping the counts to it, for example the Y wells, the fields who doesn't have Y wells will a value nan
+        # but we know that if a filed didn't have a Y well, then it has 0 Y well
+        # that's what's the next line is doing fo the Y wells count and other counts
         wellsCountDF = wellsCountDF.fillna(0)
+        
+        # Spesify datatype integer for all well count categories
         wellsCountDF['YwlbWellboreName'] = wellsCountDF['YwlbWellboreName'].astype(int)
         wellsCountDF['wlProdPurposebWellboreName'] = wellsCountDF['wlProdPurposebWellboreName'].astype(int)
         wellsCountDF['wlbInjPurposeWellboreName'] = wellsCountDF['wlbInjPurposeWellboreName'].astype(int)
@@ -186,6 +246,7 @@ class wells:
         wellsCountDF['wlProdStatusbWellboreName'] = wellsCountDF['wlProdStatusbWellboreName'].astype(int)
         wellsCountDF['wlbInjStatusWellboreName'] = wellsCountDF['wlbInjStatusWellboreName'].astype(int)
 
+        # Renaming columns
         wellsCountDF = wellsCountDF.rename(columns={'wlbWellboreName':'well count','YwlbWellboreName':'well count y','wlProdPurposebWellboreName':'production','wlbInjPurposeWellboreName':'injection',
         'wlProdOILbWellboreName':'production oil','wlProdGASbWellboreName':'production gas','wlInjGASbWellboreName':'injection gas','wlInjWATERbWellboreName':'injection water'})
 
@@ -193,7 +254,9 @@ class wells:
         # NEW CATEGORIES NOT INCLUDED IN THE APPLICATION CODE
         wellsCountDF = wellsCountDF.rename(columns={'wlProdOILANDGASbWellboreName':'production oil/gas','dfProdGASandCondWellsAllFields':'production gas/condensate','wlProdOILANDGASCONDENSATEbWellboreName':'production oil/gas/condensate','wlInjWATERANDGASbWellboreName':'WAG injection',})
 
-        wellsCountDF = wellsCountDF.rename(columns={'wlProdStatusbWellboreName':'production status "active wells"','wlbInjStatusWellboreName':'injection status "active wells"',})
+        wellsCountDF = wellsCountDF.rename(columns={'wlProdStatusbWellboreName':'production status "active wells"','wlbInjStatusWellboreName':'injection status "active wells"'})
+        
+        # Drop duplicates
         wellsCountDF = dfWellsAllFields.drop_duplicates(subset='fldNpdidField', keep="last")[['fldNpdidField', 'fldName']].join(wellsCountDF.set_index('fldNpdidField'), on='fldNpdidField', how='left')
 
 
@@ -202,17 +265,56 @@ class wells:
 
 
     def plot_multi_oil(self,filterdWells,dfMultOil,uniteType_Oil,final_directory):
-        filtered_fields = list(filterdWells['fldName'].unique())
-        choosen_filtered_fields = st.multiselect('Select wanted fields for plotting', filtered_fields,filtered_fields)
+        """
+                This function plots the oil production vs time(months) and oil production vs time(years).
+                Axis grid/ticks are set to every year and every month.
 
+                Parameters:
+                --------------
+                Dataframe:
+                dfMultOil - a dataframe which has oil data for all fields
+                uniteType_Oil - a varible which determine the unite of which the graph is plotted with
+                final_directory -  a variable that contains the directory where the graphs will be saved for downloading later.
+                filterdWells - a dataframe contains the fields which are filtered out by formations by user. those fields will be the ones plotted in Graph1,2
+
+                The Field names used as input data is the fields that are returned based on the users preference in the filter function.
+                Dataframe containing all the production data from NPD
+
+                Returns:
+                --------------
+
+                list: choosen_filtered_fields is a list of choseen fields from the filtered_fields list,
+                this choosen_filtered_fields are used to plot Graph1, Graph2
+                Graph 1: oil production vs time (years)
+                Graph 2: Oil production vs time (months)
+
+                The two figures are saved in the final_directory as:
+                 multiple fields oil rate month
+                 multiple fields oil rate year
+
+
+
+                """
+        # a list of unique fields from filterdWells which the user will choose from
+        filtered_fields = list(filterdWells['fldName'].unique())
+        # those choosen fields are saved in choosen_filtered_fields and will be used for Graph1,2
+        choosen_filtered_fields = st.multiselect('Select wanted fields for plotting', filtered_fields,filtered_fields)
+        
+        # check if the user selected more tha one field to filter the fields based on them from dfMultOil
         if len(choosen_filtered_fields) > 1:
             dfMultOil = dfMultOil[dfMultOil['Field'].isin(choosen_filtered_fields)]
+            
+        # check if the user selected one field to filter based on it from dfMultOil
         elif len(choosen_filtered_fields) == 1:
             dfMultOil = dfMultOil[dfMultOil['Field'] == choosen_filtered_fields[0]]
+        # nothing is selected, print no data
         else:
             st.text('No data')
-
+        
+        # convert rows to columns for plotting
         dfMultOil = dfMultOil.pivot(index='Years', columns='Field',values='prfPrdOilGrossMillSm3')
+        
+        # plot Graph1, Graph2
         if len(choosen_filtered_fields) >= 1:
             if st.button('Plot Multi Oil graph for filtered fields from formations'):
                 if uniteType_Oil == 'STB':
