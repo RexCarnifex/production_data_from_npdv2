@@ -8,7 +8,7 @@ from matplotlib.ticker import FixedLocator
 
 
 class wells:
-    
+
     """
             This function counts the number of cells with specific categories.
 
@@ -29,8 +29,8 @@ class wells:
             Returns:
             --------------
             Dataframe:
-            df_wells - 
-            wellsCountDF - 
+            df_wells -
+            wellsCountDF -
 
             example data:
             - injection wells
@@ -41,7 +41,7 @@ class wells:
             """
 
     def get_wellsCountDF(self,df_Wellbore_development,df_Field_Reserves):
-        
+
         # drop columns except ['fldNpdidField','wlbWellboreName','wlbStatus','wlbPurpose','wlbContent','wlbNamePart5']
         df_Wellbore_development = df_Wellbore_development[['fldNpdidField','wlbWellboreName','wlbStatus','wlbPurpose','wlbContent','wlbNamePart5']]
 
@@ -54,7 +54,7 @@ class wells:
 
         # drop columns except  ['fldNpdidField','fldName']
         df_Field_Reserves = df_Field_Reserves[['fldNpdidField','fldName']]
-    
+
         # mergeing df_Wellbore_development with df_Field_Reserves (df_wells)
         df_wells = df_Field_Reserves.join(df_Wellbore_development.set_index('fldNpdidField'),on='fldNpdidField', how='left')
         different = list(set(list(df_Wellbore_development['fldNpdidField'].unique())) - set(list(df_Field_Reserves['fldNpdidField'].unique())))
@@ -75,7 +75,7 @@ class wells:
         dfYwellsAllFields = dfYwellsAllFields.reset_index()
         # covert the pervious dataframe to a dictionary for later merging
         wells_dict = dfYwellsAllFields.set_index('fldNpdidField')['wlbNamePart5'].to_dict()
-        
+
         #wells_dict
 
         # PRODUCTION well # Purpose
@@ -225,7 +225,7 @@ class wells:
         # but we know that if a filed didn't have a Y well, then it has 0 Y well
         # that's what's the next line is doing fo the Y wells count and other counts
         wellsCountDF = wellsCountDF.fillna(0)
-        
+
         # Spesify datatype integer for all well count categories
         wellsCountDF['YwlbWellboreName'] = wellsCountDF['YwlbWellboreName'].astype(int)
         wellsCountDF['wlProdPurposebWellboreName'] = wellsCountDF['wlProdPurposebWellboreName'].astype(int)
@@ -255,7 +255,7 @@ class wells:
         wellsCountDF = wellsCountDF.rename(columns={'wlProdOILANDGASbWellboreName':'production oil/gas','dfProdGASandCondWellsAllFields':'production gas/condensate','wlProdOILANDGASCONDENSATEbWellboreName':'production oil/gas/condensate','wlInjWATERANDGASbWellboreName':'WAG injection',})
 
         wellsCountDF = wellsCountDF.rename(columns={'wlProdStatusbWellboreName':'production status "active wells"','wlbInjStatusWellboreName':'injection status "active wells"'})
-        
+
         # Drop duplicates
         wellsCountDF = dfWellsAllFields.drop_duplicates(subset='fldNpdidField', keep="last")[['fldNpdidField', 'fldName']].join(wellsCountDF.set_index('fldNpdidField'), on='fldNpdidField', how='left')
 
@@ -299,21 +299,22 @@ class wells:
         filtered_fields = list(filterdWells['fldName'].unique())
         # those choosen fields are saved in choosen_filtered_fields and will be used for Graph1,2
         choosen_filtered_fields = st.multiselect('Select wanted fields for plotting', filtered_fields,filtered_fields)
-        
-        # check if the user selected more tha one field to filter the fields based on them from dfMultOil
+
+
+        '''# check if the user selected more tha one field to filter the fields based on them from dfMultOil
         if len(choosen_filtered_fields) > 1:
             dfMultOil = dfMultOil[dfMultOil['Field'].isin(choosen_filtered_fields)]
-            
+
         # check if the user selected one field to filter based on it from dfMultOil
         elif len(choosen_filtered_fields) == 1:
             dfMultOil = dfMultOil[dfMultOil['Field'] == choosen_filtered_fields[0]]
         # nothing is selected, print no data
         else:
             st.text('No data')
-        
+
         # convert rows to columns for plotting
         dfMultOil = dfMultOil.pivot(index='Years', columns='Field',values='prfPrdOilGrossMillSm3')
-        
+
         # plot Graph1, Graph2
         if len(choosen_filtered_fields) >= 1:
             if st.button('Plot Multi Oil graph for filtered fields from formations'):
@@ -384,5 +385,5 @@ class wells:
 
                 ax.grid(axis='both', which='both')
                 plt.savefig(final_directory + '/' + ' multiple fields oil rate month.png')
-                st.pyplot()
+                st.pyplot()'''
         return choosen_filtered_fields

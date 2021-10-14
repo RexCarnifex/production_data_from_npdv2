@@ -1,20 +1,19 @@
 import pandas as pd
 import numpy as np
 import base64
-import seaborn as sb
-import matplotlib.pyplot as plt
-import matplotlib.pylab as plt
-import matplotlib.dates as mdates
-from matplotlib.ticker import FixedLocator
 import streamlit as st
 import os
-import zipfile
 import shutil
-from plot_multi_helper import plot_multi_helper
+import time
 st.set_page_config(layout="wide")
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
 
+# create file for csvs
+current_directory = os.getcwd()
+csvs_directory = os.path.join(current_directory, r'csvs')
+if not os.path.exists(csvs_directory):
+   os.makedirs(csvs_directory)
 
 
 @st.cache
@@ -57,13 +56,39 @@ def load_data():
     i = lst.index("TROLL")
     lst[i], lst[0] = lst[0], lst[i]
 
-    return df,dft,lst,df1,df2,df_Wellbore_development,df_Field_Reserves,df_Wellbore_Exploration_All
+    df.to_csv(csvs_directory + '/' + 'df.csv', index=None, header=True)
+    dft.to_csv(csvs_directory + '/' + 'dft.csv', index=None, header=True)
+    df1.to_csv(csvs_directory + '/' + 'df1Hist.csv', index=None, header=True)
+    df2.to_csv(csvs_directory + '/' + 'df2Hist.csv', index=None, header=True)
+    df_Wellbore_development.to_csv(csvs_directory + '/' + 'df_Wellbore_development.csv', index=None, header=True)
+    df_Field_Reserves.to_csv(csvs_directory + '/' + 'df_Field_Reserves.csv', index=None, header=True)
+    df_Wellbore_Exploration_All.to_csv(csvs_directory + '/' + 'df_Wellbore_Exploration_All.csv', index=None, header=True)
 
+    return df,dft,df1,df2,df_Wellbore_development,df_Field_Reserves,df_Wellbore_Exploration_All
 
+#st.text(os.listdir(csvs_directory))
 #Load data
+@st.cache
+def read_data():
+    if len(os.listdir(csvs_directory)) == 0:
+        df,dft,df1Hist,df2Hist,df_Wellbore_development,df_Field_Reserves,df_Wellbore_Exploration_All = load_data()
+    else:
 
-df,dft,lst,df1Hist,df2Hist,df_Wellbore_development,df_Field_Reserves,df_Wellbore_Exploration_All = load_data()
+        df = pd.read_csv(csvs_directory + '/' + 'df.csv')
+        dft = pd.read_csv(csvs_directory + '/' + 'dft.csv')
+        df1Hist = pd.read_csv(csvs_directory + '/' + 'df1Hist.csv')
+        df2Hist = pd.read_csv(csvs_directory + '/' + 'df2Hist.csv')
+        df_Wellbore_development = pd.read_csv(csvs_directory + '/' + 'df_Wellbore_development.csv')
+        df_Field_Reserves = pd.read_csv(csvs_directory + '/' + 'df_Field_Reserves.csv')
+        df_Wellbore_Exploration_All = pd.read_csv(csvs_directory + '/' + 'df_Wellbore_Exploration_All.csv')
 
+    return df, dft, df1Hist, df2Hist, df_Wellbore_development, df_Field_Reserves, df_Wellbore_Exploration_All
+
+
+#if nav_selection == 'Welcome':
+df,dft,df1Hist,df2Hist,df_Wellbore_development,df_Field_Reserves,df_Wellbore_Exploration_All = read_data()
+
+lst = df['prfInformationCarrier'].value_counts().index.unique().to_list()
 #=================================================== Multiple oil ==================================
 # Multiselect
 #lstOil  = st.multiselect('Select fields for first production',lst,['EKOFISK','STATFJORD','TROLL'])
@@ -92,12 +117,23 @@ df_Wellbore_Exploration_All_and_Reserves = pd.merge(df_new, df_Field_Reserves, h
 # Removing All conlumns except for fldname
 df_Wellbore_Exploration_All_and_Reserves.drop(['fldRecoverableOil','fldRecoverableGas','fldRecoverableNGL','fldRecoverableCondensate','fldRecoverableOE','fldRemainingOil','fldRemainingGas','fldRemainingNGL','fldRemainingCondensate','fldRemainingOE','fldDateOffResEstDisplay','DatesyncNPD'], axis=1, inplace=True)
 #===================================================================================================
+nav_selection = st.sidebar.radio('Navigation',['Welcome','Individual Analysis','Group Analysis'])
+
+
+if nav_selection == 'Welcome':
+    st.title('Welcome to oil analysis app')
+    st.text('this app will help in..............')
+
+
+userValue = 'TROLL'
 # dropdown selecttion
-selection = st.selectbox('Select a field for detailed production analysis',lst)
-userValue = selection
+if nav_selection == 'Individual Analysis' or nav_selection == 'Group Analysis':
+    selection = st.selectbox('Select a field for detailed production analysis',lst)
+    userValue = selection
 
 df_new = df[df['prfInformationCarrier'] == userValue]
 dft_new = dft[dft['prfInformationCarrier'] == userValue]
+
 
 df_new.rename(columns={'prfPrdOilGrossMillSm3': 'OIL', 'prfPrdGasGrossBillSm3':'GAS','prfPrdCondensateGrossMillSm3':'CONDENSATE','prfPrdOeGrossMillSm3':'OE','prfPrdProducedWaterInFieldMillSm3':'WATER'  }, inplace=True)
 dft_new.rename(columns={'prfPrdOilGrossMillSm3': 'OIL', 'prfPrdGasGrossBillSm3':'GAS','prfPrdCondensateGrossMillSm3':'CONDENSATE','prfPrdOeGrossMillSm3':'OE','prfPrdProducedWaterInFieldMillSm3':'WATER'  }, inplace=True)
@@ -106,18 +142,23 @@ dft_new.rename(columns={'prfPrdOilGrossMillSm3': 'OIL', 'prfPrdGasGrossBillSm3':
 Columns = {'OIL':'prfPrdOilGrossMillSm3', 'GAS': 'prfPrdGasGrossBillSm3','CONDENSATE': 'prfPrdCondensateGrossMillSm3',
            'OE': 'prfPrdOeGrossMillSm3', 'WATER': 'prfPrdProducedWaterInFieldMillSm3' }
 
-# dropdown Unite selection for Oil unit
-uniteType_Oil = st.selectbox('Select oil production unit',['Sm3','STB'])
+uniteType_Oil = 'Sm3'
+uniteType_Gas = 'Sm3'
+if nav_selection == 'Individual Analysis' or nav_selection == 'Group Analysis':
+    # dropdown Unite selection for Oil unit
+    uniteType_Oil = st.selectbox('Select oil production unit',['Sm3','STB'])
 
-# dropdown Unite selection for Gas unit
-uniteType_Gas = st.selectbox('Select gas production unit',['Sm3','ft3'])
+    # dropdown Unite selection for Gas unit
+    uniteType_Gas = st.selectbox('Select gas production unit',['Sm3','ft3'])
 
 
 columnNames = list(Columns.keys())
 
 
 # Multiselect
-graphNum  = st.multiselect('Select The Fluids to Plot',['OIL', 'GAS', 'CONDENSATE', 'OE', 'WATER'],['OIL', 'GAS', 'CONDENSATE', 'OE', 'WATER'])
+graphNum = ['OIL', 'GAS', 'CONDENSATE', 'OE', 'WATER']
+if nav_selection == 'Group Analysis':
+    graphNum  = st.multiselect('Select The Fluids to Plot',['OIL', 'GAS', 'CONDENSATE', 'OE', 'WATER'],['OIL', 'GAS', 'CONDENSATE', 'OE', 'WATER'])
 
 userValues = graphNum
 userValues = list(map(str.upper,userValues))
@@ -167,85 +208,11 @@ def get_binary_file_downloader_html(bin_file, file_label='File'):
     bin_str = base64.b64encode(data).decode()
     href = f'<a href="data:application/octet-stream;base64,{bin_str}" download="{os.path.basename(bin_file)}">Download {file_label}</a>'
     return href
+
 #============================================== Hist ============================================================================================================================
-# mergeng the two dataframes
-dfHist = pd.merge(df1Hist, df2Hist, on='fldNpdidField')
-
-# Extracting needed columns for charts
-dfHist = dfHist[['fldName_x','fldInplaceOil', 'fldRecoverableOil', 'fldRemainingOil', 'fldRecoverableGas', 'fldRemainingGas', 'fldInplaceAssGas', 'fldInplaceFreeGas']]
-
-# filtering with user value
-df3Filtered = dfHist[dfHist['fldName_x'] == userValue]
-
-# rename columns
-df3Filtered = df3Filtered.rename(columns={'fldInplaceOil':'OIIP','fldRecoverableOil':'EUR_oil','fldRemainingOil':'NPD TRR_oil',
-                   'fldRecoverableGas':'EUR_gas','fldRemainingGas':'NPD TRR_gas','fldInplaceAssGas':'GIIP_ass','fldInplaceFreeGas':'GIIP_free'})
-
-# split the filterd dataframe into two dataframes one for oil and for gas
-df3FilterdOil = df3Filtered[['OIIP','EUR_oil','NPD TRR_oil']]
-df3FilterdGas = df3Filtered[['GIIP_free','GIIP_ass','EUR_gas','NPD TRR_gas']]
-
-
-if uniteType_Oil == 'STB':
-    df3FilterdOil = df3FilterdOil*6.2898
-
-# convert the columns to rows for the bar chart (OIL)
-df3FilterdOil_T = df3FilterdOil.T.reset_index()
-
-# selecting the color palette (green)
-color_base = sb.color_palette()[2]
-
-with st.beta_expander('Display/hide histograms',True):
-    col1,col2 = st.beta_columns(2)
-
-    ax = sb.barplot(x = 'index',
-                y = df3FilterdOil_T[df3FilterdOil_T.columns[1]],
-                data = df3FilterdOil_T,
-                color=color_base)
-    ax.bar_label(ax.containers[0],fmt='%.2f');
-
-    plt.title( userValue + ' Oil Volumes');
-    plt.xlabel('');
-    if uniteType_Oil == 'STB':
-        plt.ylabel(' Oil Volume (MSTB)')
-    else:
-        plt.ylabel(' Oil Volume (MSm3)')
-
-    # Show the plot
-    plt.show()
-    plt.xticks(fontsize=10)
-    plt.savefig(final_directory + '/' + userValue + ' Oil Volumes.png')
-    col1.pyplot()
-
-
-    if uniteType_Gas == 'ft3':
-        df3FilterdGas = df3FilterdGas*35.315
-
-    # convert the columns to rows for the bar chart (GAS)
-    df3FilterdGas_T = df3FilterdGas.T.reset_index()
-
-    # selecting the color palette (blue)
-    color_base = sb.color_palette()[3]
-
-    ax = sb.barplot(x = 'index',
-                y = df3FilterdGas_T[df3FilterdGas_T.columns[1]],
-                data = df3FilterdGas_T,
-                color = color_base)
-
-    ax.bar_label(ax.containers[0],fmt='%.2f');
-
-    plt.title(userValue + ' Gas Volumes');
-    plt.xlabel('');
-    if uniteType_Gas == 'ft3':
-        plt.ylabel(' Gas Volume (Bft3)')
-    else:
-        plt.ylabel(' Gas Volume (BSm3)')
-
-    # Show the plot
-    plt.show()
-    plt.xticks(fontsize=10)
-    plt.savefig(final_directory + '/' + userValue + ' Gas Volumes.png')
-    col2.pyplot()
+if nav_selection == 'Individual Analysis':
+    from individual import Indivdual
+    Indivdual().histogram(df1Hist,df2Hist,userValue,uniteType_Oil,final_directory,uniteType_Gas)
 
 #==========================================================================================================================================================================
 #plot_multi2
@@ -254,8 +221,10 @@ groupORindiv = 'chose'
 #plot_multi3
 
 #plot_multi4
+ans = 'No'
+if nav_selection == 'Individual Analysis' or nav_selection == 'Group Analysis':
+    ans = st.radio('Select time interval for plotting?',('No','Yes'))
 
-ans = st.radio('Select time interval for plotting?',('No','Yes'))
 if ans.lower() == 'yes':
     statrtTime = st.text_input("Enter a Start year: ", '1990')
     endTime = st.text_input("Enter an End year: ", '2022')
@@ -283,65 +252,67 @@ for i in range(len(userValues)-1):
     dftt_newcSUM[userValues[i] + ' Cumulative Production'] = dftt_newcSUM[userValues[i]].cumsum()
 
 # show table
-Numrows = st.text_input("Display the last months of production data.", '5')
-st.text('Last ' + Numrows + ' rows of Filtered Data')
+if nav_selection == 'Individual Analysis':
+    Numrows = st.text_input("Display the last months of production data.", '5')
+    st.text('Last ' + Numrows + ' rows of Filtered Data')
 
-if uniteType_Oil == 'STB' and uniteType_Gas == 'ft3':
-    dftt_newcSUMoilGas = dftt_newcSUM.copy()
-    dftt_newcSUMoilGas[['OIL','OIL Cumulative Production']] = dftt_newcSUMoilGas[['OIL','OIL Cumulative Production']]*6.2898
-    dftt_newcSUMoilGas[['GAS','GAS Cumulative Production']] = dftt_newcSUMoilGas[['GAS','GAS Cumulative Production']]*35.315
-    st.dataframe(dftt_newcSUMoilGas.tail(int(Numrows)))
-elif uniteType_Oil == 'STB' and not uniteType_Gas == 'ft3':
-    dftt_newcSUMoil = dftt_newcSUM.copy()
-    dftt_newcSUMoil[['OIL','OIL Cumulative Production']] = dftt_newcSUMoil[['OIL','OIL Cumulative Production']]*6.2898
-    st.dataframe(dftt_newcSUMoil.tail(int(Numrows)))
-elif uniteType_Gas == 'ft3' and not uniteType_Oil == 'STB':
-    dftt_newcSUMgas = dftt_newcSUM.copy()
-    dftt_newcSUMgas[['GAS','GAS Cumulative Production']] = dftt_newcSUMgas[['GAS','GAS Cumulative Production']]*35.315
-    st.dataframe(dftt_newcSUMgas.tail(int(Numrows)))
-else:
-    st.dataframe(dftt_newcSUM.tail(int(Numrows)))
+    if uniteType_Oil == 'STB' and uniteType_Gas == 'ft3':
+        dftt_newcSUMoilGas = dftt_newcSUM.copy()
+        dftt_newcSUMoilGas[['OIL','OIL Cumulative Production']] = dftt_newcSUMoilGas[['OIL','OIL Cumulative Production']]*6.2898
+        dftt_newcSUMoilGas[['GAS','GAS Cumulative Production']] = dftt_newcSUMoilGas[['GAS','GAS Cumulative Production']]*35.315
+        st.dataframe(dftt_newcSUMoilGas.tail(int(Numrows)))
+    elif uniteType_Oil == 'STB' and not uniteType_Gas == 'ft3':
+        dftt_newcSUMoil = dftt_newcSUM.copy()
+        dftt_newcSUMoil[['OIL','OIL Cumulative Production']] = dftt_newcSUMoil[['OIL','OIL Cumulative Production']]*6.2898
+        st.dataframe(dftt_newcSUMoil.tail(int(Numrows)))
+    elif uniteType_Gas == 'ft3' and not uniteType_Oil == 'STB':
+        dftt_newcSUMgas = dftt_newcSUM.copy()
+        dftt_newcSUMgas[['GAS','GAS Cumulative Production']] = dftt_newcSUMgas[['GAS','GAS Cumulative Production']]*35.315
+        st.dataframe(dftt_newcSUMgas.tail(int(Numrows)))
+    else:
+        st.dataframe(dftt_newcSUM.tail(int(Numrows)))
 
 
 #--------------------------------------------------------------------------------------------------------------
 # description part
-dfINFO = pd.read_csv('https://factpages.npd.no/ReportServer_npdpublic?/FactPages/tableview/field_description&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false')
-dfINFO = dfINFO[['fldName','fldDescriptionHeading' ,'fldDescriptionText']]
+if nav_selection == 'Individual Analysis':
+    dfINFO = pd.read_csv('https://factpages.npd.no/ReportServer_npdpublic?/FactPages/tableview/field_description&rs:Command=Render&rc:Toolbar=false&rc:Parameters=f&IpAddress=not_used&CultureCode=en&rs:Format=CSV&Top100=false')
+    dfINFO = dfINFO[['fldName','fldDescriptionHeading' ,'fldDescriptionText']]
 
-dfINFO1 = dfINFO.pivot(index='fldName', columns='fldDescriptionHeading', values='fldDescriptionText')
-dfINFO1.reset_index(inplace=True)
+    dfINFO1 = dfINFO.pivot(index='fldName', columns='fldDescriptionHeading', values='fldDescriptionText')
+    dfINFO1.reset_index(inplace=True)
 
-d = dfINFO1[dfINFO1['fldName'] == userValue]
-d.drop(columns = ['Recovery strategy '], inplace=True)
-d.set_index(['fldName'],drop=True,inplace=True)
+    d = dfINFO1[dfINFO1['fldName'] == userValue]
+    d.drop(columns = ['Recovery strategy '], inplace=True)
+    d.set_index(['fldName'],drop=True,inplace=True)
 
-# show table
-#st.text('Description Data')
-#st.dataframe(d)
+    # show table
+    #st.text('Description Data')
+    #st.dataframe(d)
 
-# creating 5 columns of text to show description
-with st.beta_expander('Display/hide NPD field description',False):
-    col1,col2,col3,col4,col5 = st.beta_columns(5)
-    col1.markdown("<h1 style='text-align: center; font-size:20px;'>Development</h1>", unsafe_allow_html=True)
-    col1.success(str(d['Development '].values[0]))
+    # creating 5 columns of text to show description
+    with st.beta_expander('Display/hide NPD field description',False):
+        col1,col2,col3,col4,col5 = st.beta_columns(5)
+        col1.markdown("<h1 style='text-align: center; font-size:20px;'>Development</h1>", unsafe_allow_html=True)
+        col1.success(str(d['Development '].values[0]))
 
-    col2.markdown("<h1 style='text-align: center; font-size:20px;'>Recovery</h1>", unsafe_allow_html=True)
-    col2.success(str(d['Recovery '].values[0]))
+        col2.markdown("<h1 style='text-align: center; font-size:20px;'>Recovery</h1>", unsafe_allow_html=True)
+        col2.success(str(d['Recovery '].values[0]))
 
-    col3.markdown("<h1 style='text-align: center; font-size:20px;'>Reservoir</h1>", unsafe_allow_html=True)
-    col3.success(str(d['Reservoir '].values[0]))
+        col3.markdown("<h1 style='text-align: center; font-size:20px;'>Reservoir</h1>", unsafe_allow_html=True)
+        col3.success(str(d['Reservoir '].values[0]))
 
-    col4.markdown("<h1 style='text-align: center; font-size:20px;'>Status</h1>", unsafe_allow_html=True)
-    col4.success(str(d['Status '].values[0]))
+        col4.markdown("<h1 style='text-align: center; font-size:20px;'>Status</h1>", unsafe_allow_html=True)
+        col4.success(str(d['Status '].values[0]))
 
-    col5.markdown("<h1 style='text-align: center; font-size:20px;'>Transport</h1>", unsafe_allow_html=True)
-    col5.success(str(d['Transport '].values[0]))
+        col5.markdown("<h1 style='text-align: center; font-size:20px;'>Transport</h1>", unsafe_allow_html=True)
+        col5.success(str(d['Transport '].values[0]))
 
 #--------------------------------------------------------------------------------------------------------------
 # Show wells table
 #========================================================================================================================================
-with st.beta_expander("Display/hide wells's status and content histogram",False):
-
+#with st.beta_expander("Display/hide wells's status and content histogram",False):
+if nav_selection == 'Group Analysis':
     wantedlst = ['fldName', 'wlbMainArea', 'wlbFormationWithHc1' ,   'wlbAgeWithHc1'   , 'wlbFormationWithHc2'   , 'wlbAgeWithHc2'  ,  'wlbFormationWithHc3'  ,  'wlbAgeWithHc3']
     df_Wellbore_Exploration_All_and_Reserves = df_Wellbore_Exploration_All_and_Reserves[wantedlst]
     df_Wellbore_Exploration_All_and_Reserves = df_Wellbore_Exploration_All_and_Reserves.set_index('fldName')
@@ -406,43 +377,14 @@ with st.beta_expander("Display/hide wells's status and content histogram",False)
         st.dataframe(filterdWells)
         from get_wellsCountDF import wells
         choosen_filtered_fields = wells().plot_multi_oil(filterdWells.reset_index(),dfMultOil_wells_filter,uniteType_Oil,final_directory)
+    else:
+        choosen_filtered_fields = []
     #=================================================================================================================================
 
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-with st.beta_expander("Display well's status histograms",False):
-    from get_wellsCountDF import wells
-    dfWellsAllFields,df_wells,wellsCountDF = wells().get_wellsCountDF(df_Wellbore_development,df_Field_Reserves)
-
-    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-    df_wells = df_wells[df_wells['fldName'] == userValue].set_index(['fldName'])
-
-    st.text("Well's field information. The total number of wells:" + str(df_wells['wlbWellboreName'].nunique()))
-    # Num of wells name that have Y in it
-    pureY_df = df_wells[df_wells['wlbNamePart5'].notna()]
-    df_wellsY = pureY_df[pureY_df['wlbNamePart5'].str.find('Y') !=-1]
-    yCount = df_wellsY.shape[0]
-    st.text("Number of wells planned as multilateral wellbores (Y):" + str(yCount))
-
-    # dropdown status selecttion
-    stlst = df_wells['wlbStatus'].unique()
-    stselc = st.selectbox('Select a status to filtter with',stlst)
-    st.dataframe(df_wells[df_wells['wlbStatus'] == stselc])
-    # save the well count df with the main well
-    #--------------------------------------------------------------
-    from pandas import ExcelWriter
-    w = ExcelWriter('Wells.xlsx')
-    dfWellsAllFields.to_excel(w, sheet_name='Sheet0',index=False)
-    wellsCountDF.to_excel(w, sheet_name='Sheet1',index=False)
-    w.save()
-
-    st.markdown(get_binary_file_downloader_html('Wells.xlsx', 'Well count and the main well data'), unsafe_allow_html=True)
-    #--------------------------------------------------------------
-    from plot_wells_status_purpose import plot_wells_status_purpose_content
-    plot_wells_status_purpose_content().plot_contetnt(df_wells,userValue,final_directory)
-    col1, col2 = st.beta_columns(2)
-    plot_wells_status_purpose_content().plot_status(df_wells, userValue, final_directory,col1)
-    plot_wells_status_purpose_content().plot_purpose(df_wells, userValue, final_directory,col2)
+if nav_selection == 'Individual Analysis':
+    from individual import Indivdual
+    Indivdual().wells_status_histograms(df_Wellbore_development,df_Field_Reserves,userValue,final_directory)
 
 #=======================================================================================================================================================
 dfcum = df_newcSUM.copy()
@@ -475,355 +417,33 @@ for fluid in mfluids:
             mcolors[mfluids.index('OE')] = 'black'
         elif fluid == 'CONDENSATE':
             mcolors[mfluids.index('CONDENSATE')] = 'orange'
-
-
-
 #===============================================================================================================================================================#
+if nav_selection == 'Group Analysis':
+    if st.button('Plot Group Graphs - Years'):
+        st.header('Group Graphs')
+        groupORindiv = 'group'
+        from group_plot import group_plot
+        group_plot().plot(dfMultOil,choosen_filtered_fields,'years',userValues,userValue,uniteType_Oil,graphNum,final_directory,df_new,dft_new,answer,csumNames,mcolors,df_newcSUM,dftt_newcSUM,yearsx,mfluids,groupORindiv,uniteType_Gas)
+        #===============================================================================================================================================================#
 
+    if st.button('Plot Group Graphs - Months'):
+        st.header('Group Graphs')
+        groupORindiv = 'group'
+        from group_plot import group_plot
+        group_plot().plot(dfMultOil,choosen_filtered_fields,'months',userValues,userValue,uniteType_Oil,graphNum,final_directory,df_new,dft_new,answer,csumNames,mcolors,df_newcSUM,dftt_newcSUM,yearsx,mfluids,groupORindiv,uniteType_Gas)
+        #===============================================================================================================================================================#
 
-if st.button('Plot Group Graphs - Years'):
-    st.header('Group Graphs')
-    groupORindiv = 'group'
-    from group_plot import group_plot
-    group_plot().plot(dfMultOil,choosen_filtered_fields,'years',userValues,userValue,uniteType_Oil,graphNum,final_directory,df_new,dft_new,answer,csumNames,mcolors,df_newcSUM,dftt_newcSUM,yearsx,mfluids,groupORindiv,uniteType_Gas)
-    #===============================================================================================================================================================#
+if nav_selection == 'Individual Analysis':
+    from individual import Indivdual
+    lstdf = Indivdual().comulative_calcuations(answer,df_new,uniteType_Oil,userValues,uniteType_Gas,graphNum)
 
-if st.button('Plot Group Graphs - Months'):
-    st.header('Group Graphs')
-    groupORindiv = 'group'
-    from group_plot import group_plot
-    group_plot().plot(dfMultOil,choosen_filtered_fields,'months',userValues,userValue,uniteType_Oil,graphNum,final_directory,df_new,dft_new,answer,csumNames,mcolors,df_newcSUM,dftt_newcSUM,yearsx,mfluids,groupORindiv,uniteType_Gas)
-    #===============================================================================================================================================================#
-
-if (answer == 'individual' or answer =='both' or len(graphNum) ==1):
-    lstdf = []
-    for i in range(len(userValues)-1):
-        dfcSum = df_new.copy()
-        if ('OIL' in  userValues) & (uniteType_Oil =='STB'):
-            dfcSum['OIL'] = dfcSum['OIL']*6.2898
-        if ('GAS' in  userValues) & (uniteType_Gas =='ft3'):
-            dfcSum['GAS'] = dfcSum['GAS']*35.315
-        dfcSum = dfcSum[[userValues[-1],userValues[i]]]
-        dfcSum.set_index('Years', inplace=True)
-        dfcSum[userValues[i] + ' Cumulative'] = dfcSum[userValues[i]].cumsum()
-        lstdf.append(dfcSum)
-
-if st.button('Plot Individual Graphs'):
-    st.header('Individual Graphs')
-    groupORindiv = 'indiv'
-
-    if (answer == 'individual' or answer == 'both' or len(graphNum) ==1) and (len(userValues)-1>=1) :
-        userValuesclr = userValues.copy()
-        #del userValuesclr[-3:]
-        if len(graphNum) ==1:
-            userValuesclr.append('cumu')
-            userValuesclr[1] = 'cumulative'
-        else:
-            userValuesclr[1] = 'cumulative'
-
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
-
-        plot_multi_helper().plot_multi3(groupORindiv,uniteType_Gas,uniteType_Oil,lstdf[0],userValuesclr,'yes', figsize=(20, 10));
-
-
-        plt.title(str(userValue)+ ' Field ' + lstdf[0].columns.to_list()[0] + ' Production');
-
-        plt.savefig(final_directory2 + '/' + userValue + ' Field ' + lstdf[0].columns.to_list()[0] + ' Production.png')
-        st.pyplot()
-
-
-    if (answer == 'individual' or answer == 'both' or len(graphNum) ==1) and len(userValues)-1>=2:
-        userValuesclr = userValues.copy()
-        #del userValuesclr[-3:]
-        userValuesclr[1] = 'cumulative'
-        userValuesclr[0] = userValues[1]
-
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
-
-
-        plot_multi_helper().plot_multi3(groupORindiv,uniteType_Gas,uniteType_Oil,lstdf[1],userValuesclr,'yes', figsize=(20, 10));
-
-        plt.title(str(userValue)+ ' Field ' + lstdf[1].columns.to_list()[0] + ' Production');
-
-        plt.savefig(final_directory2 + '/' + userValue + ' Field ' + lstdf[1].columns.to_list()[0] + ' Production.png')
-        st.pyplot()
-
-    if (answer == 'individual' or answer == 'both' or len(graphNum) ==1) and len(userValues)-1>=3:
-        userValuesclr = userValues.copy()
-        #del userValuesclr[-3:]
-        userValuesclr[1] = 'cumulative'
-        userValuesclr[0] = userValues[2]
-
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
-
-        plot_multi_helper().plot_multi3(groupORindiv,uniteType_Gas,uniteType_Oil,lstdf[2],userValuesclr,'yes', figsize=(20, 10));
-
-        plt.title(str(userValue)+ ' Field ' + lstdf[2].columns.to_list()[0] + ' Production');
-
-        plt.savefig(final_directory2 + '/' + userValue +  ' Field ' + lstdf[2].columns.to_list()[0] + ' Production.png')
-        st.pyplot()
-
-
-    if (answer == 'individual' or answer == 'both' or len(graphNum) ==1) and len(userValues)-1>=4:
-        userValuesclr = userValues.copy()
-        #del userValuesclr[-3:]
-        userValuesclr[1] = 'cumulative'
-        userValuesclr[0] = userValues[3]
-
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
-
-        plot_multi_helper().plot_multi3(groupORindiv,uniteType_Gas,uniteType_Oil,lstdf[3],userValuesclr,'yes', figsize=(20, 10));
-
-        plt.title(str(userValue)+ ' Field ' + lstdf[3].columns.to_list()[0] + ' Production');
-
-        plt.savefig(final_directory2 + '/' + userValue +  ' Field ' + lstdf[3].columns.to_list()[0] + ' Production.png')
-        st.pyplot()
-
-
-    if (answer == 'individual' or answer == 'both' or len(graphNum) ==1) and len(userValues)-1>=5:
-        userValuesclr = userValues.copy()
-        #del userValuesclr[-3:]
-        userValuesclr[1] = 'cumulative'
-        userValuesclr[0] = userValues[4]
-
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
-
-        plot_multi_helper().plot_multi3(groupORindiv,uniteType_Gas,uniteType_Oil,lstdf[4],userValuesclr,'yes', figsize=(20, 10));
-
-        plt.title(str(userValue)+ ' Field ' + lstdf[4].columns.to_list()[0] + ' Production');
-
-        plt.savefig(final_directory2 + '/' + userValue  + ' Field ' + lstdf[4].columns.to_list()[0] + ' Production.png')
-        st.pyplot()
-
-
-    #create plots download link
-    zipf = zipfile.ZipFile('individual Plots.zip', 'w', zipfile.ZIP_DEFLATED)
-    zipdir('individual Plots', zipf)
-    zipf.close()
-    st.markdown(get_binary_file_downloader_html('individual Plots.zip', userValue + ' individual Plots'), unsafe_allow_html=True)
+    # Indivdual plot
+    Indivdual().plot_indivdual(answer,graphNum,userValues,yearsx,uniteType_Gas,uniteType_Oil,lstdf,userValue,final_directory2)
 #===============================================================================================================================================================#
-# Calculating GOR and CGR
-dfCalc = df_new.copy()
-if ('GAS' in userValues) & ('OIL' in userValues):
-    dfCalc['GOR'] = ((dfCalc['GAS']*1000)/(dfCalc['OIL']))
-
-if ('GAS' in userValues) & ('CONDENSATE' in userValues):
-    dfCalc['CGR'] = ((dfCalc['CONDENSATE'])/(dfCalc['GAS']*1000))
-
-if ('WATER' in userValues) & ('OIL' in userValues):
-    dfCalc['WOR'] = ((dfCalc['WATER'])/(dfCalc['OIL']))
-    dfCalc['WCUT'] = (((dfCalc['WATER'])/((dfCalc['OIL'])+(dfCalc['WATER']))))
-
-dfCalc = dfCalc.fillna(0)
-dfCalc.reset_index(drop=True, inplace=True)
-dfCalc2 = dfCalc.copy()
-dfCalc2.set_index('Years', inplace=True)
-
-
-fluids = userValues.copy()
-
-del fluids[-1]
-
-dfCalc = dfCalc.drop(columns = fluids)
-
-
-columnNamesCalc = dfCalc.columns.to_list()
-
-
-lstdfCalc = []
-for i in range(len(columnNamesCalc)-1):
-    lstdfCalc.append(dfCalc[[columnNamesCalc[0],columnNamesCalc[i+1]]])
-
-def calcIndex(lstdfCalc,name):
-    for i in range(4):
-        if lstdfCalc[i][lstdfCalc[i].columns[1]].name == name:
-            return i
-
-userVal = st.radio('Do you want to plot the GOR/CGR/WCUT with the fluids rates?',('Yes','No'))
-userVal = userVal.lower()
-
-
-#===============================================================================================================================================================#
-#Ploting
-if st.button('Plot Calculations Graphs'):
-    st.header('Calculations Graphs')
-
-    # Plot GOR
-    if ('GAS' in userValues) & ('OIL' in userValues) & (userVal == 'no'):
-        userValuesclr = userValues.copy()
-        index = calcIndex(lstdfCalc,'GOR')
-
-        years = mdates.YearLocator()   # every year
-        months = mdates.MonthLocator()  # every month
-        years_fmt = mdates.DateFormatter('%Y')
-
-        ax = lstdfCalc[index].set_index('Years').plot(figsize=(20,10), color ='black',x_compat=True);
-
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
-
-        # format the ticks
-        ax.xaxis.set_major_locator(years)
-        ax.xaxis.set_major_formatter(years_fmt)
-        ax.xaxis.set_minor_locator(months)
-
-        # round to nearest years.
-        datemin = np.datetime64(lstdfCalc[index]['Years'][0], 'Y')
-        datemax = np.datetime64(list(lstdfCalc[index]['Years'])[-2], 'Y') + np.timedelta64(1, 'Y')
-        ax.set_xlim(datemin, datemax)
-
-
-        plt.title(str(userValue)+ ' Gas Oil Ratio');
-        plt.xlabel('Years');
-        plt.ylabel('Gas Oil Ratio (fraction)');
-        ax.grid(axis='both', which='both')
-        plt.savefig(final_directory3 + '/' + str(userValue)+ ' Gas Oil Ratio.png')
-        st.pyplot()
-
-    elif ('GAS' in userValues) & ('OIL' in userValues) & (userVal == 'yes'):
-        colorscalc = ['GOR','GAS','OIL']
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
-
-        plot_multi_helper().plot_multi4(dfCalc2[['GOR','GAS','OIL']],colorscalc, figsize=(20, 10));
-        plt.title(str(userValue)+ ' Gas Oil Ratio');
-        plt.xlabel('Years');
-        plt.savefig(final_directory3 + '/' + str(userValue)+ ' Gas Oil Ratio.png')
-        st.pyplot()
-
-
-    # Plot CGR
-    if ('GAS' in userValues) & ('CONDENSATE' in userValues) & (userVal == 'no'):
-        userValuesclr = userValues.copy()
-        index = calcIndex(lstdfCalc,'CGR')
-
-        years = mdates.YearLocator()   # every year
-        months = mdates.MonthLocator()  # every month
-        years_fmt = mdates.DateFormatter('%Y')
-
-        ax = lstdfCalc[index].set_index('Years').plot(figsize=(20,10), color ='black',x_compat=True);
-
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
-
-        # format the ticks
-        ax.xaxis.set_major_locator(years)
-        ax.xaxis.set_major_formatter(years_fmt)
-        ax.xaxis.set_minor_locator(months)
-
-        # round to nearest years.
-        datemin = np.datetime64(lstdfCalc[index]['Years'][0], 'Y')
-        datemax = np.datetime64(list(lstdfCalc[index]['Years'])[-2], 'Y') + np.timedelta64(1, 'Y')
-        ax.set_xlim(datemin, datemax)
-
-
-        plt.title(str(userValue)+ ' CONDENSATE GAS Ratio');
-        plt.xlabel('Years');
-        plt.ylabel('CONDENSATE GAS Ratio (fraction)');
-        ax.grid(axis='both', which='both')
-        plt.savefig(final_directory3 + '/' + str(userValue)+ ' CONDENSATE GAS Ratio.png')
-        st.pyplot()
-
-    elif ('GAS' in userValues) & ('CONDENSATE' in userValues) & (userVal == 'yes'):
-        colorscalc = ['CGR','GAS','CONDENSATE']
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
-
-        plot_multi_helper().plot_multi4(dfCalc2[['CGR','GAS','CONDENSATE']],colorscalc, figsize=(20, 10));
-        plt.title(str(userValue)+ ' CONDENSATE GAS Ratio');
-        plt.xlabel('Years');
-        plt.savefig(final_directory3 + '/' + str(userValue)+ ' CONDENSATE GAS Ratio.png')
-        st.pyplot()
-
-
-    # Polt WOR
-    if ('WATER' in userValues) & ('OIL' in userValues):
-        userValuesclr = userValues.copy()
-        index = calcIndex(lstdfCalc,'WOR')
-
-        years = mdates.YearLocator()   # every year
-        months = mdates.MonthLocator()  # every month
-        years_fmt = mdates.DateFormatter('%Y')
-
-        ax = lstdfCalc[index].set_index('Years').plot(figsize=(20,10), color ='purple',x_compat=True);
-
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
-
-        # format the ticks
-        ax.xaxis.set_major_locator(years)
-        ax.xaxis.set_major_formatter(years_fmt)
-        ax.xaxis.set_minor_locator(months)
-
-        # round to nearest years.
-        datemin = np.datetime64(lstdfCalc[index]['Years'][0], 'Y')
-        datemax = np.datetime64(list(lstdfCalc[index]['Years'])[-2], 'Y') + np.timedelta64(1, 'Y')
-        ax.set_xlim(datemin, datemax)
-
-
-        plt.title(str(userValue)+ ' Water Oil Ratio');
-        plt.xlabel('Years');
-        plt.ylabel('Water Oil Ratio (fraction)');
-        ax.grid(axis='both', which='both')
-        plt.savefig(final_directory3 + '/' + str(userValue)+ ' Water Oil Ratio.png')
-        st.pyplot()
-
-
-    # Polt WCUT
-    if ('WATER' in userValues) & ('OIL' in userValues) & (userVal == 'no'):
-        userValuesclr = userValues.copy()
-        index = calcIndex(lstdfCalc,'WCUT')
-
-        years = mdates.YearLocator()   # every year
-        months = mdates.MonthLocator()  # every month
-        years_fmt = mdates.DateFormatter('%Y')
-
-        ax = lstdfCalc[index].set_index('Years').plot(figsize=(20,10), color ='black',x_compat=True);
-
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
-
-        # format the ticks
-        ax.xaxis.set_major_locator(years)
-        ax.xaxis.set_major_formatter(years_fmt)
-        ax.xaxis.set_minor_locator(months)
-
-        # round to nearest years.
-        datemin = np.datetime64(lstdfCalc[index]['Years'][0], 'Y')
-        datemax = np.datetime64(list(lstdfCalc[index]['Years'])[-2], 'Y') + np.timedelta64(1, 'Y')
-        ax.set_xlim(datemin, datemax)
-
-
-        plt.title(str(userValue)+ ' Water Cut');
-        plt.xlabel('Years');
-        plt.ylabel('Water Cut (fraction)');
-        ax.grid(axis='both', which='both')
-        plt.savefig(final_directory3 + '/' + str(userValue)+ ' Water Cut.png')
-        st.pyplot()
-
-    elif ('GAS' in userValues) & ('WATER' in userValues) & (userVal == 'yes'):
-        colorscalc = ['WCUT','OIL','WATER',]
-        for year in yearsx:
-            plt.axvline(pd.Timestamp(str(year)),color='black',linewidth=1)
-
-        plot_multi_helper().plot_multi4(dfCalc2[['WCUT','OIL','WATER']],colorscalc, figsize=(20, 10));
-        plt.title(str(userValue)+ ' Water Cut');
-        plt.xlabel('Years');
-        plt.savefig(final_directory3 + '/' + str(userValue)+ ' Water Cut.png')
-        st.pyplot()
-
-    #create plots download link
-    zipf = zipfile.ZipFile('Calculation Plots.zip', 'w', zipfile.ZIP_DEFLATED)
-    zipdir('Calculation Plots', zipf)
-    zipf.close()
-
-    st.markdown(get_binary_file_downloader_html('Calculation Plots.zip', userValue + ' Calculation Plots'), unsafe_allow_html=True)
-
+    # Calculating GOR and CGR and plotting
+    Indivdual().calculations_GOR_CGR_plot(df_new,userValues,yearsx,userValue,final_directory3)
+from individual import Indivdual
+dfCalc,dfCalc2 = Indivdual().get_dfCalc(userValues,df_new)
 #==============================================================================================================================================================
 # Export data
 if 'GAS' in userValues:
@@ -845,4 +465,5 @@ def DownloadFunc(df):
     href = f'<a href="data:file/csv;base64,{b64}" download="{userValue}.csv">Download the data from ' + userValue + ' field as csv file</a>'
     return href
 
-st.markdown(DownloadFunc(df_all), unsafe_allow_html=True)
+if nav_selection == 'Individual Analysis' or nav_selection == 'Group Analysis':
+    st.markdown(DownloadFunc(df_all), unsafe_allow_html=True)
