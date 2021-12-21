@@ -101,7 +101,7 @@ dfMultOil_wells_filter = dfMultOil.copy()
 
 #=================================================== ============ ==================================
 
-#================================================= Wellbore Exploration All rex code=========================
+#================================================= Wellbore Exploration All =========================
 # drop empty values in fldNpdidField column
 df_Wellbore_Exploration_All = df_Wellbore_Exploration_All[df_Wellbore_Exploration_All['fldNpdidField'].notna()]
 
